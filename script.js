@@ -334,10 +334,14 @@ class WikipediaGraphExplorer {
         // Add text labels
         nodeEnter.append('text')
             .attr('class', d => `node-text ${d.isCentral ? 'central' : ''}`)
-            .text(d => this.truncateText(d.title, d.isCentral ? 15 : 12))
             .attr('dy', '0.35em');
 
         const nodeUpdate = nodeEnter.merge(node);
+
+        // Update text for all nodes (both new and existing)
+        nodeUpdate.select('text')
+            .attr('class', d => `node-text ${d.isCentral ? 'central' : ''}`)
+            .text(d => this.truncateText(d.title, d.isCentral ? 15 : 12));
 
         // Add hover effects using D3
         nodeUpdate
