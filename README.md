@@ -1,4 +1,6 @@
-# Wikipedia Ontology Graph Explorer
+# Wikipedia Graph Explorer
+
+> ![note] Created with Windsurf as a test. Crazy how easy and quick it was.
 
 A modern, interactive visualization tool that displays Wikipedia articles as connected graph nodes, similar to Obsidian's graph view. Users can search for any Wikipedia article and see its connections to other articles in a beautiful, responsive interface.
 
