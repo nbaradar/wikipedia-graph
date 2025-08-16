@@ -14,6 +14,7 @@ class WikipediaGraphExplorer {
     init() {
         this.setupEventListeners();
         this.setupGraph();
+        this.setupThemeSwitcher();
         window.addEventListener('resize', () => this.handleResize());
     }
 
@@ -521,6 +522,81 @@ class WikipediaGraphExplorer {
 
     truncateText(text, maxLength) {
         return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+    }
+
+    setupThemeSwitcher() {
+        const themeButton = document.getElementById('theme-button');
+        const themeDropdown = document.getElementById('theme-dropdown');
+        const themeOptions = document.querySelectorAll('.theme-option');
+
+        // Toggle dropdown on button click
+        themeButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            themeDropdown.classList.toggle('visible');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!document.getElementById('theme-switcher').contains(e.target)) {
+                themeDropdown.classList.remove('visible');
+            }
+        });
+
+        // Handle theme selection
+        themeOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                const theme = option.dataset.theme;
+                this.setTheme(theme);
+                themeDropdown.classList.remove('visible');
+            });
+        });
+
+        // Load saved theme or default
+        const savedTheme = localStorage.getItem('wikipedia-graph-theme') || 'default';
+        this.setTheme(savedTheme);
+    }
+
+    setTheme(theme) {
+        const body = document.body;
+        
+        // Remove existing theme classes
+        body.classList.remove('dark-theme');
+        
+        // Apply new theme
+        if (theme === 'dark') {
+            body.classList.add('dark-theme');
+        }
+        
+        // Save theme preference
+        localStorage.setItem('wikipedia-graph-theme', theme);
+        
+        // Update theme button icon based on theme
+        this.updateThemeIcon(theme);
+    }
+
+    updateThemeIcon(theme) {
+        const themeButton = document.getElementById('theme-button');
+        const svg = themeButton.querySelector('svg');
+        
+        if (theme === 'dark') {
+            // Moon icon for dark theme
+            svg.innerHTML = `
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            `;
+        } else {
+            // Sun icon for light theme
+            svg.innerHTML = `
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            `;
+        }
     }
 
     escapeHtml(text) {
