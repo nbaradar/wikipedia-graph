@@ -113,8 +113,6 @@ body {
     top: 20px;
     left: 50%;
     transform: translateX(-50%);
-    width: 90%;
-    max-width: 500px;
     z-index: 1000;
     opacity: 0;
     transition: opacity 0.4s ease;
@@ -124,15 +122,99 @@ body {
     opacity: 1;
 }
 
+.search-bar-top .search-input-wrapper {
+    position: relative;
+    width: 300px;
+    height: 50px;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: visible;
+}
+
+.search-bar-top .search-input-wrapper.collapsed {
+    width: 50px;
+    overflow: hidden;
+}
+
+.search-bar-top .search-input-wrapper.collapsed:hover,
+.search-bar-top .search-input-wrapper.collapsed:focus-within {
+    width: 300px;
+    overflow: visible;
+}
+
 .search-bar-top .search-input-wrapper input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 50px;
     font-size: 1rem;
-    padding: 0.8rem 2.5rem 0.8rem 1.2rem;
+    padding: 0 50px 0 15px;
+    border: none;
+    border-radius: 25px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    outline: none;
+    opacity: 1;
+    transition: opacity 0.2s ease;
+    pointer-events: all;
+}
+
+.search-bar-top .search-input-wrapper.collapsed input {
+    opacity: 0;
+    pointer-events: all;
+}
+
+.search-bar-top .search-input-wrapper.collapsed:hover input,
+.search-bar-top .search-input-wrapper.collapsed:focus-within input {
+    opacity: 1;
+    pointer-events: all;
+    transition: opacity 0.2s ease 0.1s;
 }
 
 .search-bar-top .search-input-wrapper button {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
     width: 35px;
     height: 35px;
-    right: 6px;
+    border: none;
+    border-radius: 50%;
+    background: #667eea;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.search-bar-top .search-input-wrapper button:hover {
+    background: #5a6fd8;
+    transform: translateY(-50%) scale(1.05);
+}
+
+/* Collapsed state - show only the icon */
+.search-bar-top .search-input-wrapper.collapsed::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 25px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    transition: opacity 0.2s ease;
+    z-index: 5;
+}
+
+.search-bar-top .search-input-wrapper.collapsed:hover::before,
+.search-bar-top .search-input-wrapper.collapsed:focus-within::before {
+    opacity: 0;
 }
 
 /* Suggestions styles */
@@ -152,9 +234,38 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+/* Top search bar suggestions - special positioning */
+.search-bar-top .suggestions {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    width: 300px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(10px);
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1002;
+    display: none;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Show suggestions when search bar is expanded and has visible class */
+.search-bar-top .suggestions.visible {
+    display: block;
+    animation: fadeInUp 0.2s ease-out;
+}
+
 .suggestions.visible {
     display: block;
     animation: fadeInUp 0.2s ease-out;
+}
+
+/* Override animation for top search bar suggestions */
+.search-bar-top .suggestions.visible {
+    display: block;
+    animation: none; /* Use the transform-based animation instead */
 }
 
 @keyframes fadeInUp {
@@ -223,6 +334,8 @@ body {
     height: 100%;
     background: #1a1a2e;
     transition: opacity 0.6s ease;
+    display: flex;
+    flex-direction: column;
 }
 
 .graph-container.hidden {
@@ -230,10 +343,81 @@ body {
     pointer-events: none;
 }
 
+/* Split layout container */
+.content-container {
+    display: flex;
+    flex: 1;
+    height: calc(100% - 80px); /* Account for search bar height */
+}
+
+/* Left panel: Graph */
+.graph-panel {
+    flex: 0 0 60%;
+    position: relative;
+    border-right: 2px solid rgba(255, 255, 255, 0.1);
+}
+
 .graph {
     width: 100%;
     height: 100%;
     position: relative;
+}
+
+/* Right panel: Article preview */
+.article-panel {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    overflow-y: auto;
+}
+
+.article-content {
+    padding: 2rem;
+    height: 100%;
+    color: #333;
+}
+
+.article-placeholder {
+    text-align: center;
+    color: #666;
+    margin-top: 2rem;
+}
+
+.article-placeholder h3 {
+    color: #333;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.article-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #1a1a2e;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 0.5rem;
+}
+
+.article-extract {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: #444;
+    margin-bottom: 1.5rem;
+}
+
+.article-link {
+    display: inline-block;
+    background: #667eea;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background 0.3s ease;
+}
+
+.article-link:hover {
+    background: #5a6fd8;
 }
 
 /* Loading styles */

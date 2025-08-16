@@ -1,11 +1,12 @@
 class WikipediaGraphExplorer {
     constructor() {
         this.currentQuery = '';
+        this.currentArticleData = null;
         this.graphData = { nodes: [], links: [] };
         this.svg = null;
         this.simulation = null;
-        this.width = window.innerWidth;
-        this.height = window.innerHeight;
+        this.width = window.innerWidth * 0.6; // 60% for graph panel
+        this.height = window.innerHeight - 80; // Account for search bar
         
         this.init();
     }
@@ -29,9 +30,20 @@ class WikipediaGraphExplorer {
         searchButton.addEventListener('click', () => this.performSearch(searchInput.value));
 
         // Top search bar events
-        searchInputTop.addEventListener('input', (e) => this.handleSearchInput(e, 'suggestions-top'));
-        searchInputTop.addEventListener('keydown', (e) => this.handleKeyDown(e, true));
-        searchButtonTop.addEventListener('click', () => this.performSearch(searchInputTop.value));
+        if (searchInputTop) {
+            searchInputTop.addEventListener('input', (e) => this.handleSearchInput(e, 'suggestions-top'));
+            searchInputTop.addEventListener('keydown', (e) => this.handleKeyDown(e, true));
+            searchInputTop.addEventListener('focus', () => {
+                console.log('Top search input focused');
+                const wrapper = searchInputTop.closest('.search-input-wrapper');
+                if (wrapper && wrapper.classList.contains('collapsed')) {
+                    wrapper.classList.remove('collapsed');
+                }
+            });
+        }
+        if (searchButtonTop) {
+            searchButtonTop.addEventListener('click', () => this.performSearch(searchInputTop.value));
+        }
 
         // Click outside to hide suggestions
         document.addEventListener('click', (e) => this.handleOutsideClick(e));
@@ -145,11 +157,11 @@ class WikipediaGraphExplorer {
         const searchWrapper = document.querySelector('.search-wrapper');
         const searchBarTop = document.getElementById('search-bar-top');
 
-        if (!searchWrapper.contains(event.target)) {
+        if (searchWrapper && !searchWrapper.contains(event.target)) {
             suggestions.classList.remove('visible');
         }
         
-        if (!searchBarTop.contains(event.target)) {
+        if (searchBarTop && !searchBarTop.contains(event.target)) {
             suggestionsTop.classList.remove('visible');
         }
     }
@@ -176,6 +188,11 @@ class WikipediaGraphExplorer {
             // Update graph
             this.updateGraph(graphData);
             
+            // Display article preview for central node
+            if (this.currentArticleData) {
+                this.displayArticlePreview(this.currentArticleData);
+            }
+            
         } catch (error) {
             console.error('Error performing search:', error);
             alert('Error loading Wikipedia data. Please try again.');
@@ -195,6 +212,7 @@ class WikipediaGraphExplorer {
             }
 
             const pageData = await pageResponse.json();
+            this.currentArticleData = pageData; // Store for article preview
             
             // Get links from the article
             const linksUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=links&titles=${encodeURIComponent(query)}&pllimit=20&plnamespace=0&origin=*`;
@@ -266,11 +284,15 @@ class WikipediaGraphExplorer {
             searchContainer.classList.add('moved-up');
             graphContainer.classList.remove('hidden');
             
-            // After the move animation, switch to top search bar
+            // After the move animation, switch to top search bar (collapsed)
             setTimeout(() => {
                 searchContainer.style.display = 'none';
                 searchBarTop.classList.add('visible');
                 searchInputTop.value = this.currentQuery;
+                
+                // Start with collapsed state
+                const topWrapper = searchBarTop.querySelector('.search-input-wrapper');
+                topWrapper.classList.add('collapsed');
             }, 600); // Wait for move animation to complete
         }, 200);
     }
@@ -283,9 +305,22 @@ class WikipediaGraphExplorer {
             .attr('width', this.width)
             .attr('height', this.height);
 
-        // Create groups for links and nodes
-        this.svg.append('g').attr('class', 'links');
-        this.svg.append('g').attr('class', 'nodes');
+        // Create container group for zoom/pan
+        this.container = this.svg.append('g').attr('class', 'container');
+
+        // Create groups for links and nodes inside container
+        this.container.append('g').attr('class', 'links');
+        this.container.append('g').attr('class', 'nodes');
+
+        // Setup zoom behavior
+        this.zoom = d3.zoom()
+            .scaleExtent([0.3, 3]) // Min zoom: 30%, Max zoom: 300%
+            .on('zoom', (event) => {
+                this.container.attr('transform', event.transform);
+            });
+
+        // Apply zoom to SVG
+        this.svg.call(this.zoom);
 
         // Setup force simulation
         this.simulation = d3.forceSimulation()
@@ -298,35 +333,52 @@ class WikipediaGraphExplorer {
     updateGraph(data) {
         this.graphData = data;
 
+        // Clear existing graph elements
+        this.container.select('.links').selectAll('*').remove();
+        this.container.select('.nodes').selectAll('*').remove();
+
+        // Reset zoom to default position
+        this.resetZoom();
+
         // Update links
-        const link = this.svg.select('.links')
-            .selectAll('.link')
+        const link = this.container.select('.links')
+            .selectAll('line')
             .data(data.links);
 
-        link.exit().remove();
-
-        const linkEnter = link.enter()
-            .append('line')
-            .attr('class', 'link');
+        const linkEnter = link.enter().append('line')
+            .attr('class', 'link')
+            .attr('stroke', '#999')
+            .attr('stroke-opacity', 0.6)
+            .attr('stroke-width', 2);
 
         const linkUpdate = linkEnter.merge(link);
+        link.exit().remove();
 
         // Update nodes
-        const node = this.svg.select('.nodes')
-            .selectAll('.node')
-            .data(data.nodes);
+        const node = this.container.select('.nodes')
+            .selectAll('g')
+            .data(data.nodes, d => d.id);
 
-        node.exit().remove();
-
-        const nodeEnter = node.enter()
-            .append('g')
+        const nodeEnter = node.enter().append('g')
             .attr('class', 'node')
             .call(d3.drag()
-                .on('start', (event, d) => this.dragstarted(event, d))
-                .on('drag', (event, d) => this.dragged(event, d))
-                .on('end', (event, d) => this.dragended(event, d)));
+                .on('start', (event, d) => {
+                    if (!event.active) this.simulation.alphaTarget(0.3).restart();
+                    d.fx = d.x;
+                    d.fy = d.y;
+                })
+                .on('drag', (event, d) => {
+                    d.fx = event.x;
+                    d.fy = event.y;
+                })
+                .on('end', (event, d) => {
+                    if (!event.active) this.simulation.alphaTarget(0);
+                    d.fx = null;
+                    d.fy = null;
+                })
+            );
 
-        // Add circles
+        // Add circles to nodes
         nodeEnter.append('circle')
             .attr('class', d => `node-circle ${d.isCentral ? 'central' : ''}`)
             .attr('r', d => d.isCentral ? 25 : 20);
@@ -357,8 +409,9 @@ class WikipediaGraphExplorer {
                     .duration(200)
                     .attr('r', d.isCentral ? 25 : 20);
             })
-            .on('click', (event, d) => {
-                window.open(d.url, '_blank');
+            .on('click', async (event, d) => {
+                // Load article preview for clicked node
+                await this.loadArticlePreview(d.title);
             });
 
         // Update simulation
@@ -404,14 +457,65 @@ class WikipediaGraphExplorer {
         document.getElementById('loading').classList.add('hidden');
     }
 
+    async loadArticlePreview(title) {
+        try {
+            const pageUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+            const response = await fetch(pageUrl);
+            
+            if (!response.ok) {
+                throw new Error('Article not found');
+            }
+            
+            const articleData = await response.json();
+            this.displayArticlePreview(articleData);
+            
+        } catch (error) {
+            console.error('Error loading article preview:', error);
+            this.displayArticleError(title);
+        }
+    }
+
+    displayArticlePreview(articleData) {
+        const articleContent = document.getElementById('article-content');
+        
+        articleContent.innerHTML = `
+            <div class="article-title">${this.escapeHtml(articleData.title)}</div>
+            <div class="article-extract">${this.escapeHtml(articleData.extract || 'No description available.')}</div>
+            <a href="${articleData.content_urls.desktop.page}" target="_blank" class="article-link">
+                Read full article on Wikipedia
+            </a>
+        `;
+    }
+
+    displayArticleError(title) {
+        const articleContent = document.getElementById('article-content');
+        
+        articleContent.innerHTML = `
+            <div class="article-title">${this.escapeHtml(title)}</div>
+            <div class="article-extract">Sorry, we couldn't load the preview for this article.</div>
+            <a href="https://en.wikipedia.org/wiki/${encodeURIComponent(title)}" target="_blank" class="article-link">
+                View on Wikipedia
+            </a>
+        `;
+    }
+
     handleResize() {
-        this.width = window.innerWidth;
-        this.height = window.innerHeight;
+        this.width = window.innerWidth * 0.6;
+        this.height = window.innerHeight - 80;
         
         if (this.svg) {
             this.svg.attr('width', this.width).attr('height', this.height);
             this.simulation.force('center', d3.forceCenter(this.width / 2, this.height / 2));
             this.simulation.alpha(0.3).restart();
+        }
+    }
+
+    // Add method to reset zoom to fit content
+    resetZoom() {
+        if (this.svg && this.zoom) {
+            this.svg.transition()
+                .duration(750)
+                .call(this.zoom.transform, d3.zoomIdentity);
         }
     }
 
