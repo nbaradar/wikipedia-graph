@@ -420,6 +420,24 @@ body {
     background: #5a6fd8;
 }
 
+.article-image {
+    margin: 16px 0;
+    text-align: center;
+}
+
+.article-image img {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.article-image img:hover {
+    transform: scale(1.02);
+}
+
 /* Loading styles */
 .loading {
     position: absolute;
@@ -769,4 +787,9 @@ body.dark-theme {
 
 .dark-theme .link {
     stroke: #a0aec0 !important;
+}
+
+/* Dark theme article image styles */
+.dark-theme .article-image img {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }

@@ -458,18 +458,34 @@ class WikipediaGraphExplorer {
         document.getElementById('loading').classList.add('hidden');
     }
 
+    async fetchArticlePreview(title) {
+        try {
+            const response = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+            const data = await response.json();
+            
+            console.log('Wikipedia API response:', data); // Debug log
+            
+            return {
+                title: data.title,
+                extract: data.extract,
+                url: data.content_urls?.desktop?.page,
+                thumbnail: data.thumbnail,
+                originalimage: data.originalimage
+            };
+        } catch (error) {
+            console.error('Error fetching article preview:', error);
+            return null;
+        }
+    }
+
     async loadArticlePreview(title) {
         try {
-            const pageUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
-            const response = await fetch(pageUrl);
-            
-            if (!response.ok) {
-                throw new Error('Article not found');
+            const articleData = await this.fetchArticlePreview(title);
+            if (!articleData) {
+                this.displayArticleError(title);
+            } else {
+                this.displayArticlePreview(articleData);
             }
-            
-            const articleData = await response.json();
-            this.displayArticlePreview(articleData);
-            
         } catch (error) {
             console.error('Error loading article preview:', error);
             this.displayArticleError(title);
@@ -479,10 +495,28 @@ class WikipediaGraphExplorer {
     displayArticlePreview(articleData) {
         const articleContent = document.getElementById('article-content');
         
+        console.log('Full article data:', articleData); // Debug log
+        
+        // Check if thumbnail exists and extract URL properly
+        let imageUrl = null;
+        if (articleData.thumbnail && articleData.thumbnail.source) {
+            imageUrl = articleData.thumbnail.source;
+        } else if (articleData.originalimage && articleData.originalimage.source) {
+            imageUrl = articleData.originalimage.source;
+        }
+        
+        console.log('Extracted image URL:', imageUrl); // Debug log
+        
+        const imageHtml = imageUrl ? 
+            `<div class="article-image">
+                <img src="${imageUrl}" alt="${this.escapeHtml(articleData.title)}" />
+            </div>` : '';
+        
         articleContent.innerHTML = `
             <div class="article-title">${this.escapeHtml(articleData.title)}</div>
+            ${imageHtml}
             <div class="article-extract">${this.escapeHtml(articleData.extract || 'No description available.')}</div>
-            <a href="${articleData.content_urls.desktop.page}" target="_blank" class="article-link">
+            <a href="${articleData.url}" target="_blank" class="article-link">
                 Read full article on Wikipedia
             </a>
         `;
