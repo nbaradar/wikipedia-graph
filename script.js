@@ -5,8 +5,8 @@ class WikipediaGraphExplorer {
         this.graphData = { nodes: [], links: [] };
         this.svg = null;
         this.simulation = null;
-        this.width = window.innerWidth * 0.6; // 60% for graph panel
-        this.height = window.innerHeight - 80; // Account for search bar
+        this.width = this.getGraphWidth();
+        this.height = this.getGraphHeight();
         
         this.init();
     }
@@ -171,6 +171,7 @@ class WikipediaGraphExplorer {
         if (!query.trim()) return;
 
         this.currentQuery = query.trim();
+        console.log('Starting search for:', this.currentQuery);
         
         // Hide suggestions
         document.getElementById('suggestions').classList.remove('visible');
@@ -183,46 +184,130 @@ class WikipediaGraphExplorer {
         this.transitionToGraphView();
 
         try {
+            console.log('About to fetch Wikipedia graph...');
             // Fetch Wikipedia data
             const graphData = await this.fetchWikipediaGraph(this.currentQuery);
+            console.log('Graph data received:', graphData);
+            
+            // Validate graph data
+            if (!graphData || !graphData.nodes || !Array.isArray(graphData.nodes)) {
+                throw new Error('Invalid graph data structure received');
+            }
             
             // Update graph
-            this.updateGraph(graphData);
+            console.log('Updating graph...');
+            try {
+                this.updateGraph(graphData);
+                console.log('Graph updated successfully');
+            } catch (updateError) {
+                console.error('Error updating graph:', updateError);
+                throw new Error(`Graph update failed: ${updateError.message}`);
+            }
             
             // Display article preview for central node
             if (this.currentArticleData) {
-                this.displayArticlePreview(this.currentArticleData);
+                console.log('Displaying article preview...');
+                try {
+                    this.displayArticlePreview(this.currentArticleData);
+                    console.log('Article preview displayed successfully');
+                } catch (previewError) {
+                    console.error('Error displaying article preview:', previewError);
+                    // Don't throw here, preview is not critical
+                }
             }
+            
+            console.log('Search completed successfully');
             
         } catch (error) {
             console.error('Error performing search:', error);
-            alert('Error loading Wikipedia data. Please try again.');
+            console.error('Error name:', error.name);
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
+            console.error('Error toString:', error.toString());
+            console.error('Error type:', typeof error);
+            console.error('Error constructor:', error.constructor.name);
+            
+            const errorMessage = error.message || error.toString() || 'Unknown error occurred';
+            alert(`Error loading Wikipedia data: ${errorMessage}. Please try again.`);
         } finally {
             this.hideLoading();
         }
     }
 
     async fetchWikipediaGraph(query) {
+        console.log('fetchWikipediaGraph called with query:', query);
+        
         try {
             // Get the main article content
             const pageUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`;
+            console.log('Fetching page URL:', pageUrl);
+            
             const pageResponse = await fetch(pageUrl);
+            console.log('Page response status:', pageResponse.status);
             
             if (!pageResponse.ok) {
-                throw new Error('Article not found');
+                throw new Error(`Article not found (${pageResponse.status})`);
             }
 
             const pageData = await pageResponse.json();
+            console.log('Page data received:', pageData);
             this.currentArticleData = pageData; // Store for article preview
             
-            // Get links from the article
-            const linksUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=links&titles=${encodeURIComponent(query)}&pllimit=20&plnamespace=0&origin=*`;
+            // Get links from the article - use the actual title from the response
+            const actualTitle = pageData.title || query;
+            const linksUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=links&titles=${encodeURIComponent(actualTitle)}&pllimit=20&plnamespace=0&origin=*`;
+            console.log('Fetching links URL:', linksUrl);
+            
             const linksResponse = await fetch(linksUrl);
+            console.log('Links response status:', linksResponse.status);
+            
+            if (!linksResponse.ok) {
+                throw new Error(`Failed to fetch links (${linksResponse.status})`);
+            }
+            
             const linksData = await linksResponse.json();
+            console.log('Links data received:', linksData);
 
-            const pages = linksData.query.pages;
+            const pages = linksData.query?.pages;
+            if (!pages) {
+                console.warn('No pages found in links response, creating graph with just main node');
+                // Return just the main node if no links found
+                return {
+                    nodes: [{
+                        id: query,
+                        title: pageData.title,
+                        description: pageData.extract,
+                        url: pageData.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(query)}`,
+                        isCentral: true,
+                        x: this.width / 2,
+                        y: this.height / 2
+                    }],
+                    links: []
+                };
+            }
+            
             const pageId = Object.keys(pages)[0];
-            const links = pages[pageId].links || [];
+            const page = pages[pageId];
+            
+            if (page.missing) {
+                console.warn('Page marked as missing, creating graph with just main node');
+                // Return just the main node if page is missing
+                return {
+                    nodes: [{
+                        id: query,
+                        title: pageData.title,
+                        description: pageData.extract,
+                        url: pageData.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(query)}`,
+                        isCentral: true,
+                        x: this.width / 2,
+                        y: this.height / 2
+                    }],
+                    links: []
+                };
+            }
+            
+            const links = page.links || [];
+            console.log('Found links:', links.length);
 
             // Create nodes and links
             const nodes = [
@@ -230,7 +315,7 @@ class WikipediaGraphExplorer {
                     id: query,
                     title: pageData.title,
                     description: pageData.extract,
-                    url: pageData.content_urls.desktop.page,
+                    url: pageData.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(query)}`,
                     isCentral: true,
                     x: this.width / 2,
                     y: this.height / 2
@@ -265,6 +350,9 @@ class WikipediaGraphExplorer {
 
         } catch (error) {
             console.error('Error fetching Wikipedia graph:', error);
+            console.error('fetchWikipediaGraph error name:', error.name);
+            console.error('fetchWikipediaGraph error message:', error.message);
+            console.error('fetchWikipediaGraph error stack:', error.stack);
             throw error;
         }
     }
@@ -339,7 +427,11 @@ class WikipediaGraphExplorer {
         this.container.select('.nodes').selectAll('*').remove();
 
         // Reset zoom to default position
-        this.resetZoom();
+        if (this.svg && this.zoom) {
+            this.svg.transition()
+                .duration(750)
+                .call(this.zoom.transform, d3.zoomIdentity);
+        }
 
         // Update links
         const link = this.container.select('.links')
@@ -534,23 +626,29 @@ class WikipediaGraphExplorer {
         `;
     }
 
-    handleResize() {
-        this.width = window.innerWidth * 0.6;
-        this.height = window.innerHeight - 80;
-        
-        if (this.svg) {
-            this.svg.attr('width', this.width).attr('height', this.height);
-            this.simulation.force('center', d3.forceCenter(this.width / 2, this.height / 2));
-            this.simulation.alpha(0.3).restart();
-        }
+    getGraphWidth() {
+        return window.innerWidth <= 768 ? window.innerWidth : window.innerWidth * 0.6;
     }
 
-    // Add method to reset zoom to fit content
-    resetZoom() {
-        if (this.svg && this.zoom) {
-            this.svg.transition()
-                .duration(750)
-                .call(this.zoom.transform, d3.zoomIdentity);
+    getGraphHeight() {
+        return window.innerWidth <= 768 ? window.innerHeight * 0.5 : window.innerHeight - 80;
+    }
+
+    handleResize() {
+        this.width = this.getGraphWidth();
+        this.height = this.getGraphHeight();
+        
+        if (this.svg) {
+            this.svg
+                .attr('width', this.width)
+                .attr('height', this.height);
+            
+            if (this.simulation) {
+                this.simulation
+                    .force('center', d3.forceCenter(this.width / 2, this.height / 2))
+                    .alpha(0.3)
+                    .restart();
+            }
         }
     }
 
