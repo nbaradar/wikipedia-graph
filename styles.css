@@ -5,11 +5,196 @@
     box-sizing: border-box;
 }
 
+/* CSS Custom Properties for Theme System */
+:root {
+    /* Default Theme Colors */
+    --primary-bg-start: #667eea;
+    --primary-bg-end: #764ba2;
+    --text-primary: #333;
+    --text-secondary: #666;
+    --text-tertiary: #999;
+    --text-light: #fff;
+    
+    /* Surface Colors */
+    --surface-primary: rgba(255, 255, 255, 0.95);
+    --surface-secondary: rgba(255, 255, 255, 0.8);
+    --surface-tertiary: rgba(255, 255, 255, 0.1);
+    --surface-overlay: rgba(0, 0, 0, 0.1);
+    
+    /* Interactive Colors */
+    --accent-primary: #667eea;
+    --accent-secondary: #5a6fd8;
+    --accent-hover: rgba(102, 126, 234, 0.1);
+    
+    /* Graph Colors */
+    --graph-bg: #1a1a2e;
+    --graph-node-primary: #667eea;
+    --graph-node-secondary: #4a5568;
+    --graph-node-central: #e53e3e;
+    --graph-link: rgba(255, 255, 255, 0.3);
+    --graph-link-hover: rgba(255, 255, 255, 0.6);
+    --graph-text: #fff;
+    
+    /* UI Component Colors */
+    --border-light: rgba(255, 255, 255, 0.2);
+    --border-medium: rgba(0, 0, 0, 0.1);
+    --shadow-light: rgba(0, 0, 0, 0.15);
+    --shadow-medium: rgba(0, 0, 0, 0.25);
+    
+    /* Search & Suggestion Colors */
+    --search-bg: var(--surface-primary);
+    --suggestion-bg: var(--surface-primary);
+    --suggestion-border: var(--border-light);
+    --suggestion-hover-bg: #e0e7ff;
+    --suggestion-hover-border: rgba(79, 70, 229, 0.25);
+    
+    /* Article Panel Colors */
+    --article-panel-bg: var(--surface-primary);
+    
+    /* Panel & Border Colors */
+    --panel-border: rgba(255, 255, 255, 0.1);
+    
+    /* Node & Graph Element Colors */
+    --node-fill: var(--accent-primary);
+    --node-stroke: #fff;
+    --node-central-fill: #ff6b6b;
+    --node-hover-fill: var(--accent-secondary);
+    --node-text-fill: white;
+    --node-text-shadow: rgba(0, 0, 0, 0.5);
+    
+    /* Link Colors */
+    --link-stroke: rgba(255, 255, 255, 0.3);
+    --link-hover-stroke: rgba(255, 255, 255, 0.6);
+    
+    /* Loading Spinner */
+    --spinner-bg: rgba(255, 255, 255, 0.3);
+}
+
+/* Dark Theme */
+body.dark-theme {
+    --primary-bg-start: #1a202c;
+    --primary-bg-end: #2d3748;
+    --text-primary: #e2e8f0;
+    --text-secondary: #a0aec0;
+    --text-tertiary: #718096;
+    --text-light: #f7fafc;
+    
+    --surface-primary: rgba(45, 55, 72, 0.95);
+    --surface-secondary: rgba(45, 55, 72, 0.8);
+    --surface-tertiary: rgba(255, 255, 255, 0.1);
+    --surface-overlay: rgba(0, 0, 0, 0.3);
+    
+    --accent-primary: #4a5568;
+    --accent-secondary: #2d3748;
+    --accent-hover: rgba(74, 85, 104, 0.3);
+    
+    --graph-bg: #1a202c;
+    --graph-node-primary: #4a5568;
+    --graph-node-secondary: #2d3748;
+    --graph-node-central: #e53e3e;
+    --graph-link: rgba(160, 174, 192, 1);
+    --graph-link-hover: rgba(160, 174, 192, 0.8);
+    --graph-text: #e2e8f0;
+    
+    --border-light: rgba(255, 255, 255, 0.1);
+    --border-medium: rgba(255, 255, 255, 0.1);
+    --shadow-light: rgba(0, 0, 0, 0.3);
+    --shadow-medium: rgba(0, 0, 0, 0.4);
+    
+    /* Search & Suggestion Colors */
+    --search-bg: var(--surface-primary);
+    --suggestion-bg: #1f2937;
+    --suggestion-border: rgba(255, 255, 255, 0.08);
+    --suggestion-hover-bg: #334155;
+    --suggestion-hover-border: rgba(147, 197, 253, 0.25);
+    
+    /* Article Panel Colors */
+    --article-panel-bg: var(--surface-primary);
+    
+    /* Panel & Border Colors */
+    --panel-border: rgba(255, 255, 255, 0.1);
+    
+    /* Node & Graph Element Colors */
+    --node-fill: #93c5fd;
+    --node-stroke: #1f2937;
+    --node-central-fill: #f87171;
+    --node-hover-fill: #60a5fa;
+    --node-text-fill: #1f2937;
+    --node-text-shadow: rgba(255, 255, 255, 0.3);
+    
+    /* Link Colors */
+    --link-stroke: rgba(160, 174, 192, 0.4);
+    --link-hover-stroke: rgba(160, 174, 192, 0.7);
+    
+    /* Loading Spinner */
+    --spinner-bg: rgba(160, 174, 192, 0.3);
+}
+
+/* Ocean Theme - Example of easy theme addition */
+body.ocean-theme {
+    --primary-bg-start: #0f4c75;
+    --primary-bg-end: #3282b8;
+    --text-primary: #ffffff;
+    --text-secondary: #b8e6ff;
+    --text-tertiary: #7fb3d3;
+    --text-light: #ffffff;
+    
+    --surface-primary: rgba(15, 76, 117, 0.95);
+    --surface-secondary: rgba(15, 76, 117, 0.8);
+    --surface-tertiary: rgba(255, 255, 255, 0.1);
+    --surface-overlay: rgba(0, 0, 0, 0.2);
+    
+    --accent-primary: #00a8cc;
+    --accent-secondary: #0085a3;
+    --accent-hover: rgba(0, 168, 204, 0.2);
+    
+    --graph-bg: #0f4c75;
+    --graph-node-primary: #00a8cc;
+    --graph-node-secondary: #3282b8;
+    --graph-node-central: #ff6b6b;
+    --graph-link: rgba(184, 230, 255, 0.4);
+    --graph-link-hover: rgba(184, 230, 255, 0.7);
+    --graph-text: #ffffff;
+    
+    --border-light: rgba(255, 255, 255, 0.2);
+    --border-medium: rgba(255, 255, 255, 0.15);
+    --shadow-light: rgba(0, 0, 0, 0.2);
+    --shadow-medium: rgba(0, 0, 0, 0.3);
+    
+    /* Search & Suggestion Colors */
+    --search-bg: var(--surface-primary);
+    --suggestion-bg: rgba(15, 76, 117, 0.95);
+    --suggestion-border: rgba(255, 255, 255, 0.15);
+    --suggestion-hover-bg: rgba(0, 168, 204, 0.2);
+    --suggestion-hover-border: rgba(0, 168, 204, 0.4);
+    
+    /* Article Panel Colors */
+    --article-panel-bg: var(--surface-primary);
+    
+    /* Panel & Border Colors */
+    --panel-border: rgba(255, 255, 255, 0.15);
+    
+    /* Node & Graph Element Colors */
+    --node-fill: #00a8cc;
+    --node-stroke: #ffffff;
+    --node-central-fill: #ff6b6b;
+    --node-hover-fill: #0085a3;
+    --node-text-fill: #ffffff;
+    --node-text-shadow: rgba(0, 0, 0, 0.4);
+    
+    /* Link Colors */
+    --link-stroke: rgba(184, 230, 255, 0.4);
+    --link-hover-stroke: rgba(184, 230, 255, 0.7);
+    
+    /* Loading Spinner */
+    --spinner-bg: rgba(184, 230, 255, 0.3);
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary-bg-start) 0%, var(--primary-bg-end) 100%);
     min-height: 100vh;
-    color: #333;
+    color: var(--text-primary);
     overflow-x: hidden;
 }
 
@@ -48,10 +233,10 @@ body {
 .app-title {
     font-size: 3rem;
     font-weight: 300;
-    color: white;
+    color: var(--text-light);
     margin-bottom: 2rem;
-    opacity: 1;
-    transition: opacity 0.4s ease;
+    text-shadow: 0 2px 20px var(--shadow-light);
+    transition: opacity 0.6s ease;
 }
 
 .app-title.fade-out {
@@ -71,39 +256,41 @@ body {
     font-size: 1.1rem;
     border: none;
     border-radius: 50px;
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--surface-primary);
     backdrop-filter: blur(10px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 32px var(--shadow-light);
     outline: none;
     transition: all 0.3s ease;
+    color: var(--text-primary);
 }
 
 .search-input-wrapper input:focus {
-    background: white;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    background: var(--surface-primary);
+    box-shadow: 0 12px 40px var(--shadow-light);
     transform: translateY(-2px);
 }
 
 .search-input-wrapper button {
     position: absolute;
-    right: 8px;
+    right: 10px;
     top: 50%;
     transform: translateY(-50%);
-    background: #667eea;
-    border: none;
-    border-radius: 50%;
     width: 40px;
     height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    color: var(--text-light);
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
-    cursor: pointer;
     transition: all 0.3s ease;
+    z-index: 1;
 }
 
 .search-input-wrapper button:hover {
-    background: #5a6fd8;
+    background: var(--accent-secondary);
     transform: translateY(-50%) scale(1.05);
 }
 
@@ -181,8 +368,8 @@ body {
     height: 35px;
     border: none;
     border-radius: 50%;
-    background: #667eea;
-    color: white;
+    background: var(--accent-primary);
+    color: var(--text-light);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -192,7 +379,7 @@ body {
 }
 
 .search-bar-top .search-input-wrapper button:hover {
-    background: #5a6fd8;
+    background: var(--accent-secondary);
     transform: translateY(-50%) scale(1.05);
 }
 
@@ -204,10 +391,10 @@ body {
     left: 0;
     width: 50px;
     height: 50px;
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--search-bg);
     backdrop-filter: blur(10px);
     border-radius: 25px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 32px var(--shadow-light);
     transition: opacity 0.2s ease;
     z-index: 5;
 }
@@ -223,15 +410,15 @@ body {
     top: calc(100% + 4px);
     left: 0;
     right: 0;
-    background: white;
+    background: var(--suggestion-bg);
     border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 32px var(--shadow-light);
     backdrop-filter: blur(10px);
     max-height: 300px;
     overflow-y: auto;
     z-index: 1001;
     display: none;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--suggestion-border);
 }
 
 /* Top search bar suggestions - special positioning */
@@ -240,9 +427,9 @@ body {
     top: calc(100% + 4px);
     left: 0;
     width: 300px;
-    background: white;
+    background: var(--suggestion-bg);
     border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 32px var(--shadow-light);
     backdrop-filter: blur(10px);
     max-height: 300px;
     overflow-y: auto;
@@ -283,7 +470,7 @@ body {
 .suggestion-item {
     padding: 12px 16px;
     cursor: pointer;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--suggestion-border);
     transition: background-color 0.15s ease, border-left-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
     border-left: 4px solid transparent;
 }
@@ -291,43 +478,22 @@ body {
 /* Hover and keyboard-active share the same visual language */
 .suggestion-item:hover,
 .suggestion-item.active {
-    background-color: #e0e7ff; /* stronger indigo tint for light theme */
-    border-left-color: #4f46e5; /* deeper indigo accent */
-    box-shadow: inset 0 0 0 1px rgba(79, 70, 229, 0.25);
+    background-color: var(--suggestion-hover-bg);
+    border-left-color: var(--accent-primary);
+    box-shadow: inset 0 0 0 1px var(--suggestion-hover-border);
 }
 
 .suggestion-item.active .suggestion-title {
-    color: #1f2937; /* slate-800 */
+    color: var(--text-primary);
     font-weight: 600;
 }
 
 .suggestion-item.active .suggestion-description {
-    color: #374151; /* slate-700 */
+    color: var(--text-secondary);
 }
 
 /* Keyboard highlight for active suggestion */
-/* Dark theme adjustments for suggestions and items */
-body.dark-theme .suggestions {
-    background: #1f2937;
-    border-color: rgba(255, 255, 255, 0.08);
-}
-
-body.dark-theme .suggestion-item {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-body.dark-theme .suggestion-title { color: #e5e7eb; }
-body.dark-theme .suggestion-description { color: #a1a1aa; }
-
-body.dark-theme .suggestion-item:hover,
-body.dark-theme .suggestion-item.active {
-    background-color: #334155; /* slate-700 */
-    border-left-color: #93c5fd; /* sky-300 */
-    box-shadow: inset 0 0 0 1px rgba(147, 197, 253, 0.25);
-}
-
-body.dark-theme .suggestion-item.active .suggestion-title { color: #f8fafc; font-weight: 600; }
-body.dark-theme .suggestion-item.active .suggestion-description { color: #cbd5e1; }
+/* Dark theme adjustments - now handled by CSS variables */
 
 .suggestion-item:last-child {
     border-bottom: none;
@@ -345,13 +511,13 @@ body.dark-theme .suggestion-item.active .suggestion-description { color: #cbd5e1
 
 .suggestion-title {
     font-weight: 500;
-    color: #333;
+    color: var(--text-primary);
     font-size: 0.95rem;
 }
 
 .suggestion-description {
     font-size: 0.85rem;
-    color: #666;
+    color: var(--text-secondary);
     margin-top: 2px;
     line-height: 1.3;
     max-height: 2.6em;
@@ -390,7 +556,7 @@ body.dark-theme .suggestion-item.active .suggestion-description { color: #cbd5e1
 .graph-panel {
     flex: 0 0 60%;
     position: relative;
-    border-right: 2px solid rgba(255, 255, 255, 0.1);
+    border-right: 2px solid var(--panel-border);
 }
 
 .graph {
@@ -402,7 +568,7 @@ body.dark-theme .suggestion-item.active .suggestion-description { color: #cbd5e1
 /* Right panel: Article preview */
 .article-panel {
     flex: 1;
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--article-panel-bg);
     backdrop-filter: blur(10px);
     overflow-y: auto;
 }
@@ -410,17 +576,17 @@ body.dark-theme .suggestion-item.active .suggestion-description { color: #cbd5e1
 .article-content {
     padding: 2rem;
     height: 100%;
-    color: #333;
+    color: var(--text-primary);
 }
 
 .article-placeholder {
     text-align: center;
-    color: #666;
+    color: var(--text-secondary);
     margin-top: 2rem;
 }
 
 .article-placeholder h3 {
-    color: #333;
+    color: var(--text-primary);
     margin-bottom: 1rem;
     font-size: 1.5rem;
 }
@@ -428,23 +594,23 @@ body.dark-theme .suggestion-item.active .suggestion-description { color: #cbd5e1
 .article-title {
     font-size: 2rem;
     font-weight: bold;
-    color: #1a1a2e;
+    color: var(--text-primary);
     margin-bottom: 1rem;
-    border-bottom: 2px solid #667eea;
+    border-bottom: 2px solid var(--accent-primary);
     padding-bottom: 0.5rem;
 }
 
 .article-extract {
     font-size: 1.1rem;
     line-height: 1.6;
-    color: #444;
+    color: var(--text-secondary);
     margin-bottom: 1.5rem;
 }
 
 .article-link {
     display: inline-block;
-    background: #667eea;
-    color: white;
+    background: var(--accent-primary);
+    color: var(--text-light);
     padding: 0.5rem 1rem;
     border-radius: 25px;
     text-decoration: none;
@@ -453,7 +619,7 @@ body.dark-theme .suggestion-item.active .suggestion-description { color: #cbd5e1
 }
 
 .article-link:hover {
-    background: #5a6fd8;
+    background: var(--accent-secondary);
 }
 
 .article-image {
@@ -465,7 +631,7 @@ body.dark-theme .suggestion-item.active .suggestion-description { color: #cbd5e1
     max-width: 100%;
     max-height: 200px;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 12px var(--shadow-light);
     object-fit: cover;
     transition: transform 0.3s ease;
 }
@@ -481,7 +647,7 @@ body.dark-theme .suggestion-item.active .suggestion-description { color: #cbd5e1
     left: 50%;
     transform: translate(-50%, -50%);
     text-align: center;
-    color: white;
+    color: var(--text-light);
     z-index: 100;
 }
 
@@ -492,8 +658,8 @@ body.dark-theme .suggestion-item.active .suggestion-description { color: #cbd5e1
 .spinner {
     width: 40px;
     height: 40px;
-    border: 4px solid rgba(255, 255, 255, 0.3);
-    border-top: 4px solid white;
+    border: 4px solid var(--spinner-bg);
+    border-top: 4px solid var(--text-light);
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 0 auto 1rem;
@@ -510,30 +676,30 @@ body.dark-theme .suggestion-item.active .suggestion-description { color: #cbd5e1
 }
 
 .node-circle {
-    fill: #667eea;
-    stroke: #fff;
+    fill: var(--node-fill);
+    stroke: var(--node-stroke);
     stroke-width: 2px;
     transition: fill 0.2s ease, stroke-width 0.2s ease, r 0.2s ease;
 }
 
 .node-circle.central {
-    fill: #ff6b6b;
+    fill: var(--node-central-fill);
     stroke-width: 3px;
 }
 
 .node-circle:hover {
-    fill: #5a6fd8;
+    fill: var(--node-hover-fill);
     stroke-width: 3px;
 }
 
 .node-text {
-    fill: white;
+    fill: var(--node-text-fill);
     text-anchor: middle;
     dominant-baseline: middle;
     font-size: 12px;
     font-weight: 500;
     pointer-events: none;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    text-shadow: 1px 1px 2px var(--node-text-shadow);
 }
 
 .node-text.central {
@@ -543,13 +709,13 @@ body.dark-theme .suggestion-item.active .suggestion-description { color: #cbd5e1
 
 /* Graph link styles */
 .link {
-    stroke: rgba(255, 255, 255, 0.3);
+    stroke: var(--link-stroke);
     stroke-width: 2px;
     transition: all 0.3s ease;
 }
 
 .link:hover {
-    stroke: rgba(255, 255, 255, 0.6);
+    stroke: var(--link-hover-stroke);
     stroke-width: 3px;
 }
 
@@ -575,7 +741,7 @@ body.dark-theme .suggestion-item.active .suggestion-description { color: #cbd5e1
         flex: 0 0 50% !important;
         order: 2;
         border-right: none;
-        border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        border-bottom: 2px solid var(--panel-border);
         min-height: 0;
     }
     
