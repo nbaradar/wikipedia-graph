@@ -17,7 +17,7 @@
  * - `emit` sends payload on `event.detail` but consumers never see the Event,
  *   only the payload, keeping call sites simple and consistent.
  */
-export class Emitter {
+export default class Emitter {
   constructor() {
     /** @private */
     this._target = new EventTarget();

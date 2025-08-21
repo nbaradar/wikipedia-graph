@@ -7,9 +7,9 @@
  * - Persists theme in localStorage under 'wikipedia-graph-theme'.
  * - Exposes set/get for programmatic control. Call destroy() to remove listeners if needed.
  */
-import { Emitter } from '../utils/Emitter.js';
+import Emitter from '../utils/Emitter.js';
 
-export class ThemeManager {
+export default class ThemeManager {
   /**
    * @param {Object} [opts]
    * @param {string} [opts.button='#theme-button'] - Button that opens the dropdown.

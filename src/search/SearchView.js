@@ -7,9 +7,9 @@
  * - Debounced input to reduce API chatter.
  * - Emits: 'submit' with the final query string.
  */
-import { Emitter } from '../utils/Emitter.js';
+import Emitter from '../utils/Emitter.js';
 
-export class SearchView {
+export default class SearchView {
   /**
    * @param {Object} opts
    * @param {string|HTMLElement} opts.mainInput
@@ -23,6 +23,7 @@ export class SearchView {
    * @param {number} [opts.debounceMs=150]
    */
   constructor(opts) {
+    console.log('SearchView constructor called with:', opts);
     // Use a dedicated emitter so consumers receive payload directly.
     this.emitter = new Emitter();
     this.mainInput = this._el(opts.mainInput);
@@ -35,6 +36,12 @@ export class SearchView {
     this.minChars = opts.minChars ?? 2;
     this.debounceMs = opts.debounceMs ?? 150;
 
+    console.log('SearchView elements found:', {
+      mainInput: !!this.mainInput,
+      mainButton: !!this.mainButton,
+      suggMain: !!this.suggMain
+    });
+
     this._debouncedSuggest = this._debounce(this._handleSuggest.bind(this), this.debounceMs);
     this._outsideClick = (e) => this._handleOutsideClick(e);
     this._state = {
@@ -43,6 +50,7 @@ export class SearchView {
     };
 
     this._wire();
+    console.log('SearchView constructor complete');
   }
 
   on(type, handler) { return this.emitter.on(type, handler); }
@@ -62,12 +70,28 @@ export class SearchView {
   destroy() { document.removeEventListener('click', this._outsideClick); }
 
   _wire() {
+    console.log('SearchView _wire() called');
     // Main input
     if (this.mainInput) {
-      this.mainInput.addEventListener('input', (e) => this._onInput(e, this.suggMain));
+      console.log('Adding event listeners to main input');
+      this.mainInput.addEventListener('input', (e) => {
+        console.log('Main input event:', e.target.value);
+        this._onInput(e, this.suggMain);
+      });
       this.mainInput.addEventListener('keydown', (e) => this._onKeyDown(e, 'main'));
+    } else {
+      console.log('No main input found');
     }
-    this.mainButton?.addEventListener('click', () => this._submit(this.mainInput?.value || ''));
+    
+    if (this.mainButton) {
+      console.log('Adding click listener to main button');
+      this.mainButton.addEventListener('click', () => {
+        console.log('Main button clicked');
+        this._submit(this.mainInput?.value || '');
+      });
+    } else {
+      console.log('No main button found');
+    }
 
     // Top input
     if (this.topInput) {
@@ -81,6 +105,7 @@ export class SearchView {
     this.topButton?.addEventListener('click', () => this._submit(this.topInput?.value || ''));
 
     document.addEventListener('click', this._outsideClick);
+    console.log('SearchView _wire() complete');
   }
 
   async _onInput(event, suggestionsContainer) {

@@ -1,31 +1,13 @@
 /**
  * ArticleView
  * Renders the article preview panel (title, image, extract, link).
- *
- * Dev notes:
- * - UI-only: no network calls. Feed it data from a service.
- * - Safe text rendering via basic HTML escaping for dynamic content.
- * - Self-contained so future layout changes (e.g., resizable panes) don't affect logic here.
- *
- * Example:
- *   const article = new ArticleView({ el: '#article-content' });
- *   article.show({ title, extract, url, thumbnail, originalimage });
- *   article.showError('Graph theory');
  */
-export class ArticleView {
-  /**
-   * @param {Object} opts
-   * @param {string|HTMLElement} opts.el - Container for article content.
-   */
+export default class ArticleView {
   constructor({ el }) {
     this.container = typeof el === 'string' ? document.querySelector(el) : el;
     if (!this.container) throw new Error('ArticleView: container element not found');
   }
 
-  /**
-   * Render article preview content.
-   * @param {{title:string, extract?:string, url?:string, thumbnail?:{source:string}, originalimage?:{source:string}}} articleData
-   */
   show(articleData) {
     if (!articleData) return;
     const imageUrl = this._extractImageUrl(articleData);
@@ -41,10 +23,6 @@ export class ArticleView {
     `;
   }
 
-  /**
-   * Render an error message for a given title.
-   * @param {string} title
-   */
   showError(title) {
     this.container.innerHTML = `
       <div class="article-title">${this._esc(title)}</div>

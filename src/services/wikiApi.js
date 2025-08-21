@@ -13,7 +13,7 @@
  *   const suggestions = await api.fetchSuggestions('graph');
  *   const summary = await api.fetchSummary('D3.js');
  */
-export class WikiApi {
+export default class WikiApi {
   /**
    * @param {Object} [opts]
    * @param {typeof fetch} [opts.fetchImpl] - Inject custom fetch (e.g., for tests).
@@ -96,10 +96,13 @@ export class WikiApi {
   /**
    * Fetch links from a page using the core API.
    * @param {string} title - Canonical page title to query for links.
+   * @param {number} [maxLinks=100] - Maximum number of links to fetch
    * @returns {Promise<string[]>}
    */
-  async fetchLinks(title) {
-    const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=links&titles=${encodeURIComponent(title)}&pllimit=20&plnamespace=0&origin=*`;
+  async fetchLinks(title, maxLinks = 100) {
+    // Use the higher of maxLinks or 100 to ensure we can fetch enough links
+    const apiLimit = Math.max(maxLinks, 100);
+    const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=links&titles=${encodeURIComponent(title)}&pllimit=${apiLimit}&plnamespace=0&origin=*`;
     const res = await this._fetch(url);
     if (!res.ok) throw new Error(`Links HTTP ${res.status}`);
     const data = await res.json();
@@ -109,7 +112,7 @@ export class WikiApi {
     const page = pages[pageId];
     if (!page || page.missing) return [];
     const links = page.links || [];
-    return links.slice(0, this.maxLinks).map(l => l.title).filter(t => !!t);
+    return links.slice(0, maxLinks).map(l => l.title).filter(t => !!t);
   }
 
   /**
@@ -118,9 +121,10 @@ export class WikiApi {
    * Note: No positional data is added; layout belongs to the view.
    *
    * @param {string} query
+   * @param {number} [maxNodes=12] - Maximum number of connected nodes to include
    * @returns {Promise<{nodes: Array<any>, links: Array<{source:string,target:string}>, pageData: any}>}
    */
-  async fetchGraph(query) {
+  async fetchGraph(query, maxNodes = 12) {
     if (!query?.trim()) throw new Error('Empty query');
 
     // 1) Get central page summary to resolve canonical title
@@ -128,13 +132,16 @@ export class WikiApi {
     if (!pageData) throw new Error('Article not found');
     const actualTitle = pageData.title || query;
 
-    // 2) Get up to maxLinks outgoing links
+    // 2) Get up to maxNodes outgoing links
     let linkedTitles = [];
     try {
-      linkedTitles = await this.fetchLinks(actualTitle);
+      linkedTitles = await this.fetchLinks(actualTitle, maxNodes);
     } catch (_) {
       linkedTitles = [];
     }
+
+    // If maxNodes is 0, only show the central node
+    const limitedLinkedTitles = maxNodes > 0 ? linkedTitles : [];
 
     // 3) Assemble graph
     const nodes = [
@@ -145,12 +152,12 @@ export class WikiApi {
         url: pageData.url || `https://en.wikipedia.org/wiki/${encodeURIComponent(actualTitle)}`,
         isCentral: true,
       },
-      ...linkedTitles
+      ...limitedLinkedTitles
         .filter(t => t !== actualTitle)
         .map(t => ({ id: t, title: t, description: '', url: `https://en.wikipedia.org/wiki/${encodeURIComponent(t)}`, isCentral: false })),
     ];
 
-    const links = linkedTitles
+    const links = limitedLinkedTitles
       .filter(t => t !== actualTitle)
       .map(t => ({ source: actualTitle, target: t }));
 

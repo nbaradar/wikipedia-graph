@@ -1,8 +1,11 @@
-import { WikiApi } from './src/services/wikiApi.js';
-import { GraphView } from './src/graph/GraphView.js';
-import { ArticleView } from './src/article/ArticleView.js';
-import { SearchView } from './src/search/SearchView.js';
-import { ThemeManager } from './src/theme/ThemeManager.js';
+import SearchView from './src/search/SearchView.js';
+import ArticleView from './src/article/ArticleView.js';
+import GraphView from './src/graph/GraphView.js';
+import NodeCountController from './src/controls/NodeCountController.js';
+import PanelController from './src/controls/PanelController.js';
+import WikiApi from './src/services/wikiApi.js';
+import Emitter from './src/utils/Emitter.js';
+import ThemeManager from './src/theme/ThemeManager.js';
 
 class WikipediaGraphExplorer {
     constructor() {
@@ -12,20 +15,34 @@ class WikipediaGraphExplorer {
         this.width = this.getGraphWidth();
         this.height = this.getGraphHeight();
         this.api = new WikiApi();
+        this.emitter = new Emitter();
         this.graphView = null;
         this.articleView = null;
         this.themeManager = null;
         this.searchView = null;
+        this.nodeCountController = null;
         
         this.init();
     }
 
     init() {
+        console.log('WikipediaGraphExplorer initializing...');
+        // Wait for DOM to be ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.initializeComponents());
+        } else {
+            this.initializeComponents();
+        }
+    }
+    
+    initializeComponents() {
         this.setupSearchView();
         this.setupGraphView();
         this.setupArticleView();
         this.setupThemeManager();
+        this.setupNodeCountController();
         window.addEventListener('resize', () => this.handleResize());
+        console.log('WikipediaGraphExplorer initialized');
     }
 
     setupGraphView() {
@@ -45,19 +62,59 @@ class WikipediaGraphExplorer {
         this.themeManager = new ThemeManager();
     }
 
-    setupSearchView() {
-        this.searchView = new SearchView({
-            mainInput: '#search-input',
-            mainButton: '#search-button',
-            topInput: '#search-input-top',
-            topButton: '#search-button-top',
-            suggestionsMainEl: '#suggestions',
-            suggestionsTopEl: '#suggestions-top',
-            fetchSuggestions: (q) => this.api.fetchSuggestions(q),
-            minChars: 2,
-            debounceMs: 150,
+    setupNodeCountController() {
+        this.nodeCountController = new NodeCountController();
+        this.nodeCountController.on('nodeCount:change', async (nodeCount) => {
+            await this.updateGraphWithNodeCount(nodeCount);
         });
-        this.searchView.on('submit', (q) => this.performSearch(q));
+        
+        // Setup panel controller for drag and collapse functionality
+        const nodeControlPanel = document.getElementById('node-control');
+        this.panelController = new PanelController(nodeControlPanel, this.emitter);
+    }
+
+    setupSearchView() {
+        console.log('Setting up SearchView...');
+        
+        // Check if DOM elements exist
+        const mainInput = document.querySelector('#search-input');
+        const mainButton = document.querySelector('#search-button');
+        const suggestions = document.querySelector('#suggestions');
+        
+        console.log('DOM elements found:', {
+            mainInput: !!mainInput,
+            mainButton: !!mainButton,
+            suggestions: !!suggestions
+        });
+        
+        if (!mainInput || !mainButton || !suggestions) {
+            console.error('Required DOM elements not found!');
+            return;
+        }
+        
+        try {
+            this.searchView = new SearchView({
+                mainInput: '#search-input',
+                mainButton: '#search-button',
+                topInput: '#search-input-top',
+                topButton: '#search-button-top',
+                suggestionsMainEl: '#suggestions',
+                suggestionsTopEl: '#suggestions-top',
+                fetchSuggestions: (q) => {
+                    console.log('Fetching suggestions for:', q);
+                    return this.api.fetchSuggestions(q);
+                },
+                minChars: 2,
+                debounceMs: 150,
+            });
+            this.searchView.on('submit', (q) => {
+                console.log('Search submitted:', q);
+                this.performSearch(q);
+            });
+            console.log('SearchView setup complete');
+        } catch (error) {
+            console.error('Error setting up SearchView:', error);
+        }
     }
 
     // Search input/suggestions moved to SearchView
@@ -79,8 +136,9 @@ class WikipediaGraphExplorer {
 
         try {
             console.log('About to fetch Wikipedia graph...');
-            // Fetch Wikipedia data via service
-            const result = await this.api.fetchGraph(this.currentQuery);
+            // Fetch Wikipedia data via service with node count
+            const nodeCount = this.nodeCountController ? this.nodeCountController.getValue() : 10;
+            const result = await this.api.fetchGraph(this.currentQuery, nodeCount);
             const graphData = { nodes: result.nodes, links: result.links };
             this.currentArticleData = result.pageData; // Store for article preview
             console.log('Graph data received:', graphData);
@@ -93,7 +151,7 @@ class WikipediaGraphExplorer {
             // Update graph
             console.log('Updating graph...');
             try {
-                this.graphView.render(graphData);
+                this.graphView.render(graphData, false); // No animation on initial load
                 console.log('Graph updated successfully');
             } catch (updateError) {
                 console.error('Error updating graph:', updateError);
@@ -169,6 +227,22 @@ class WikipediaGraphExplorer {
 
     hideLoading() {
         this.graphView?.setLoading(false);
+    }
+
+    async updateGraphWithNodeCount(nodeCount) {
+        if (!this.currentQuery) return;
+        
+        this.graphView.setLoading(true);
+        
+        try {
+            const { nodes, links, pageData } = await this.api.fetchGraph(this.currentQuery, nodeCount);
+            this.currentArticleData = pageData;
+            this.graphView.render({ nodes, links }, true); // Enable animations for dynamic updates
+        } catch (error) {
+            console.error('Failed to update graph:', error);
+        } finally {
+            this.graphView.setLoading(false);
+        }
     }
 
     async fetchArticlePreview(title) {

@@ -55,6 +55,52 @@
             <div id="content-container" class="content-container">
                 <!-- Left panel: Graph -->
                 <div id="graph-panel" class="graph-panel">
+                    <!-- Node Count Control -->
+                    <div id="node-control" class="node-control">
+                        <div class="node-control-header">
+                            <div class="node-control-drag-handle" title="Drag to move">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="9" cy="12" r="1"></circle>
+                                    <circle cx="9" cy="5" r="1"></circle>
+                                    <circle cx="9" cy="19" r="1"></circle>
+                                    <circle cx="15" cy="12" r="1"></circle>
+                                    <circle cx="15" cy="5" r="1"></circle>
+                                    <circle cx="15" cy="19" r="1"></circle>
+                                </svg>
+                            </div>
+                            <span class="node-control-title">Nodes</span>
+                            <button class="node-control-collapse" title="Collapse panel">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6,9 12,15 18,9"></polyline>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="node-control-content">
+                            <label for="node-count-slider" class="node-control-label">
+                                <div class="node-control-inputs">
+                                    <input 
+                                        type="range" 
+                                        id="node-count-slider" 
+                                        class="node-count-slider"
+                                        min="0" 
+                                        max="100" 
+                                        value="10"
+                                        step="1"
+                                    >
+                                    <input 
+                                        type="number" 
+                                        id="node-count-input" 
+                                        class="node-count-input"
+                                        min="0" 
+                                        max="100" 
+                                        value="10"
+                                        step="1"
+                                    >
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
                     <div id="graph" class="graph"></div>
                     <div id="loading" class="loading hidden">
                         <div class="spinner"></div>

@@ -9,9 +9,9 @@
  *   graph.on('node:select', title => console.log(title));
  *   graph.resize({ width, height });
  */
-import { Emitter } from '../utils/Emitter.js';
+import Emitter from '../utils/Emitter.js';
 
-export class GraphView {
+export default class GraphView {
   /**
    * @param {Object} opts
    * @param {string|HTMLElement} opts.el - Container where an <svg> will be appended.
@@ -79,23 +79,21 @@ export class GraphView {
   }
 
   /**
-   * Render or update the graph.
+   * Render or update the graph with smooth animations.
    * @param {{nodes: Array<any>, links: Array<{source:string|any,target:string|any}>}} data
+   * @param {boolean} [animate=true] - Whether to animate the changes
    */
-  render(data) {
+  render(data, animate = true) {
     const d3 = this.d3;
     this.graphData = data || { nodes: [], links: [] };
 
-    // Clear previous elements
-    this.root.select('.links').selectAll('*').remove();
-    this.root.select('.nodes').selectAll('*').remove();
-
-    // Reset zoom to identity
-    if (this.svg && this.zoom) {
+    // Reset zoom to identity only on first render
+    if (this.svg && this.zoom && !this._hasRendered) {
       this.svg.transition().duration(750).call(this.zoom.transform, d3.zoomIdentity);
+      this._hasRendered = true;
     }
 
-    // Links
+    // Links with smooth animations
     const link = this.root.select('.links')
       .selectAll('line')
       .data(this.graphData.links);
@@ -103,10 +101,32 @@ export class GraphView {
     const linkEnter = link.enter().append('line')
       .attr('class', 'link')
       .attr('stroke', '#999')
-      .attr('stroke-opacity', 0.6)
+      .attr('stroke-opacity', 0)
       .attr('stroke-width', 2);
+    
+    // Animate link entrance
+    if (animate) {
+      linkEnter.transition()
+        .duration(500)
+        .ease(d3.easeBackOut.overshoot(1.2))
+        .attr('stroke-opacity', 0.6);
+    } else {
+      linkEnter.attr('stroke-opacity', 0.6);
+    }
+    
     const linkUpdate = linkEnter.merge(link);
-    link.exit().remove();
+    
+    // Animate link exit
+    const linkExit = link.exit();
+    if (animate) {
+      linkExit.transition()
+        .duration(300)
+        .ease(d3.easeBackIn.overshoot(1.2))
+        .attr('stroke-opacity', 0)
+        .remove();
+    } else {
+      linkExit.remove();
+    }
 
     // Nodes
     const node = this.root.select('.nodes')
@@ -115,6 +135,8 @@ export class GraphView {
 
     const nodeEnter = node.enter().append('g')
       .attr('class', 'node')
+      .style('opacity', 0)
+      .attr('transform', d => `translate(${this.width / 2},${this.height / 2})`)
       .call(this.d3.drag()
         .on('start', (event, d) => {
           if (!event.active) this.simulation.alphaTarget(0.3).restart();
@@ -141,20 +163,77 @@ export class GraphView {
         this.emit('node:select', d.title);
       });
 
+    // Add circles with initial scale of 0 for smooth entrance
     nodeEnter.append('circle')
       .attr('class', d => d.isCentral ? 'node-circle central' : 'node-circle')
-      .attr('r', d => d.isCentral ? 25 : 20)
+      .attr('r', 0)
       .attr('fill', d => d.isCentral ? '#ff6b6b' : '#667eea')
       .attr('stroke', '#fff')
       .attr('stroke-width', d => d.isCentral ? 3 : 2);
 
+    // Add text with initial scale of 0
     nodeEnter.append('text')
       .attr('class', d => d.isCentral ? 'node-text central' : 'node-text')
       .attr('dy', 4)
+      .style('font-size', '0px')
       .text(d => d.title);
 
+    // Animate node entrance
+    if (animate) {
+      nodeEnter.transition()
+        .duration(600)
+        .delay((d, i) => i * 50) // Stagger the animations
+        .ease(d3.easeBackOut.overshoot(1.4))
+        .style('opacity', 1);
+      
+      nodeEnter.select('circle')
+        .transition()
+        .duration(600)
+        .delay((d, i) => i * 50)
+        .ease(d3.easeBackOut.overshoot(1.4))
+        .attr('r', d => d.isCentral ? 25 : 20);
+      
+      nodeEnter.select('text')
+        .transition()
+        .duration(400)
+        .delay((d, i) => i * 50 + 200)
+        .ease(d3.easeBackOut)
+        .style('font-size', d => d.isCentral ? '14px' : '12px');
+    } else {
+      nodeEnter
+        .style('opacity', 1)
+        .select('circle')
+        .attr('r', d => d.isCentral ? 25 : 20);
+      
+      nodeEnter.select('text')
+        .style('font-size', d => d.isCentral ? '14px' : '12px');
+    }
+
     const nodeUpdate = nodeEnter.merge(node);
-    node.exit().remove();
+    
+    // Animate node exit with satisfying shrink effect
+    const nodeExit = node.exit();
+    if (animate) {
+      nodeExit.transition()
+        .duration(400)
+        .ease(d3.easeBackIn.overshoot(1.4))
+        .style('opacity', 0)
+        .remove();
+      
+      nodeExit.select('circle')
+        .transition()
+        .duration(400)
+        .ease(d3.easeBackIn.overshoot(1.4))
+        .attr('r', 0);
+      
+      nodeExit.select('text')
+        .transition()
+        .duration(200)
+        .ease(d3.easeBackIn)
+        .style('font-size', '0px');
+    } else {
+      nodeExit.remove();
+    }
 
     // Simulation binding
     this.simulation
