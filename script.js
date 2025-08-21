@@ -1,24 +1,33 @@
 import { WikiApi } from './src/services/wikiApi.js';
+import { GraphView } from './src/graph/GraphView.js';
 
 class WikipediaGraphExplorer {
     constructor() {
         this.currentQuery = '';
         this.currentArticleData = null;
-        this.graphData = { nodes: [], links: [] };
-        this.svg = null;
-        this.simulation = null;
+        // Graph data is managed by GraphView; no local copy needed here.
         this.width = this.getGraphWidth();
         this.height = this.getGraphHeight();
         this.api = new WikiApi();
+        this.graphView = null;
         
         this.init();
     }
 
     init() {
         this.setupEventListeners();
-        this.setupGraph();
+        this.setupGraphView();
         this.setupThemeSwitcher();
         window.addEventListener('resize', () => this.handleResize());
+    }
+
+    setupGraphView() {
+        // Initialize GraphView which owns D3 rendering and interactions
+        this.graphView = new GraphView({ el: '#graph', loadingEl: '#loading', width: this.width, height: this.height });
+        // Forward node clicks to article preview loader
+        this.graphView.on('node:select', async (title) => {
+            await this.loadArticlePreview(title);
+        });
     }
 
     setupEventListeners() {
@@ -163,7 +172,7 @@ class WikipediaGraphExplorer {
             // Update graph
             console.log('Updating graph...');
             try {
-                this.updateGraph(graphData);
+                this.graphView.render(graphData);
                 console.log('Graph updated successfully');
             } catch (updateError) {
                 console.error('Error updating graph:', updateError);
@@ -231,168 +240,13 @@ class WikipediaGraphExplorer {
         }, 200);
     }
 
-    setupGraph() {
-        const graphElement = document.getElementById('graph');
-        
-        this.svg = d3.select(graphElement)
-            .append('svg')
-            .attr('width', this.width)
-            .attr('height', this.height);
-
-        // Create container group for zoom/pan
-        this.container = this.svg.append('g').attr('class', 'container');
-
-        // Create groups for links and nodes inside container
-        this.container.append('g').attr('class', 'links');
-        this.container.append('g').attr('class', 'nodes');
-
-        // Setup zoom behavior
-        this.zoom = d3.zoom()
-            .scaleExtent([0.3, 3]) // Min zoom: 30%, Max zoom: 300%
-            .on('zoom', (event) => {
-                this.container.attr('transform', event.transform);
-            });
-
-        // Apply zoom to SVG
-        this.svg.call(this.zoom);
-
-        // Setup force simulation
-        this.simulation = d3.forceSimulation()
-            .force('link', d3.forceLink().id(d => d.id).distance(150))
-            .force('charge', d3.forceManyBody().strength(-300))
-            .force('center', d3.forceCenter(this.width / 2, this.height / 2))
-            .force('collision', d3.forceCollide().radius(50));
-    }
-
-    updateGraph(data) {
-        this.graphData = data;
-
-        // Clear existing graph elements
-        this.container.select('.links').selectAll('*').remove();
-        this.container.select('.nodes').selectAll('*').remove();
-
-        // Reset zoom to default position
-        if (this.svg && this.zoom) {
-            this.svg.transition()
-                .duration(750)
-                .call(this.zoom.transform, d3.zoomIdentity);
-        }
-
-        // Update links
-        const link = this.container.select('.links')
-            .selectAll('line')
-            .data(data.links);
-
-        const linkEnter = link.enter().append('line')
-            .attr('class', 'link')
-            .attr('stroke', '#999')
-            .attr('stroke-opacity', 0.6)
-            .attr('stroke-width', 2);
-
-        const linkUpdate = linkEnter.merge(link);
-        link.exit().remove();
-
-        // Update nodes
-        const node = this.container.select('.nodes')
-            .selectAll('g')
-            .data(data.nodes, d => d.id);
-
-        const nodeEnter = node.enter().append('g')
-            .attr('class', 'node')
-            .call(d3.drag()
-                .on('start', (event, d) => {
-                    if (!event.active) this.simulation.alphaTarget(0.3).restart();
-                    d.fx = d.x;
-                    d.fy = d.y;
-                })
-                .on('drag', (event, d) => {
-                    d.fx = event.x;
-                    d.fy = event.y;
-                })
-                .on('end', (event, d) => {
-                    if (!event.active) this.simulation.alphaTarget(0);
-                    d.fx = null;
-                    d.fy = null;
-                })
-            );
-
-        // Add circles to nodes
-        nodeEnter.append('circle')
-            .attr('class', d => `node-circle ${d.isCentral ? 'central' : ''}`)
-            .attr('r', d => d.isCentral ? 25 : 20);
-
-        // Add text labels
-        nodeEnter.append('text')
-            .attr('class', d => `node-text ${d.isCentral ? 'central' : ''}`)
-            .attr('dy', '0.35em');
-
-        const nodeUpdate = nodeEnter.merge(node);
-
-        // Update text for all nodes (both new and existing)
-        nodeUpdate.select('text')
-            .attr('class', d => `node-text ${d.isCentral ? 'central' : ''}`)
-            .text(d => this.truncateText(d.title, d.isCentral ? 15 : 12));
-
-        // Add hover effects using D3
-        nodeUpdate
-            .on('mouseenter', function(event, d) {
-                d3.select(this).select('circle')
-                    .transition()
-                    .duration(200)
-                    .attr('r', d.isCentral ? 30 : 25);
-            })
-            .on('mouseleave', function(event, d) {
-                d3.select(this).select('circle')
-                    .transition()
-                    .duration(200)
-                    .attr('r', d.isCentral ? 25 : 20);
-            })
-            .on('click', async (event, d) => {
-                // Load article preview for clicked node
-                await this.loadArticlePreview(d.title);
-            });
-
-        // Update simulation
-        this.simulation
-            .nodes(data.nodes)
-            .on('tick', () => {
-                linkUpdate
-                    .attr('x1', d => d.source.x)
-                    .attr('y1', d => d.source.y)
-                    .attr('x2', d => d.target.x)
-                    .attr('y2', d => d.target.y);
-
-                nodeUpdate
-                    .attr('transform', d => `translate(${d.x},${d.y})`);
-            });
-
-        this.simulation.force('link').links(data.links);
-        this.simulation.alpha(1).restart();
-    }
-
-    dragstarted(event, d) {
-        if (!event.active) this.simulation.alphaTarget(0.3).restart();
-        d.fx = d.x;
-        d.fy = d.y;
-    }
-
-    dragged(event, d) {
-        d.fx = event.x;
-        d.fy = event.y;
-    }
-
-    dragended(event, d) {
-        if (!event.active) this.simulation.alphaTarget(0);
-        d.fx = null;
-        d.fy = null;
-    }
 
     showLoading() {
-        document.getElementById('loading').classList.remove('hidden');
+        this.graphView?.setLoading(true);
     }
 
     hideLoading() {
-        document.getElementById('loading').classList.add('hidden');
+        this.graphView?.setLoading(false);
     }
 
     async fetchArticlePreview(title) {
@@ -468,22 +322,9 @@ class WikipediaGraphExplorer {
         this.width = this.getGraphWidth();
         this.height = this.getGraphHeight();
         
-        if (this.svg) {
-            this.svg
-                .attr('width', this.width)
-                .attr('height', this.height);
-            
-            if (this.simulation) {
-                this.simulation
-                    .force('center', d3.forceCenter(this.width / 2, this.height / 2))
-                    .alpha(0.3)
-                    .restart();
-            }
+        if (this.graphView) {
+            this.graphView.resize({ width: this.width, height: this.height });
         }
-    }
-
-    truncateText(text, maxLength) {
-        return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
     }
 
     setupThemeSwitcher() {
