@@ -1,3 +1,5 @@
+import { WikiApi } from './src/services/wikiApi.js';
+
 class WikipediaGraphExplorer {
     constructor() {
         this.currentQuery = '';
@@ -7,6 +9,7 @@ class WikipediaGraphExplorer {
         this.simulation = null;
         this.width = this.getGraphWidth();
         this.height = this.getGraphHeight();
+        this.api = new WikiApi();
         
         this.init();
     }
@@ -63,51 +66,12 @@ class WikipediaGraphExplorer {
 
         try {
             console.log('Fetching suggestions for:', query); // Debug log
-            const suggestions = await this.fetchWikipediaSuggestions(query);
+            const suggestions = await this.api.fetchSuggestions(query);
             console.log('Got suggestions:', suggestions); // Debug log
             this.displaySuggestions(suggestions, suggestionsContainer, event.target);
         } catch (error) {
             console.error('Error fetching suggestions:', error);
         }
-    }
-
-    async fetchWikipediaSuggestions(query) {
-        console.log('Fetching suggestions for query:', query);
-        
-        // Use OpenSearch API which is more reliable for suggestions
-        const openSearchUrl = `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=8&namespace=0&format=json&origin=*`;
-        
-        try {
-            console.log('Making request to:', openSearchUrl);
-            const response = await fetch(openSearchUrl);
-            console.log('Response status:', response.status);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            console.log('API response data:', data);
-            
-            if (data && data[1] && data[2]) {
-                const suggestions = data[1].map((title, index) => ({
-                    title: title,
-                    description: data[2][index] || 'Wikipedia article'
-                }));
-                console.log('Processed suggestions:', suggestions);
-                return suggestions;
-            }
-        } catch (error) {
-            console.error('OpenSearch API error:', error);
-        }
-
-        // Fallback: return some test data if API fails
-        console.log('Using fallback test data');
-        return [
-            { title: `${query} (Test)`, description: 'Test suggestion - API may be blocked' },
-            { title: `${query} Article`, description: 'Another test suggestion' },
-            { title: `${query} Page`, description: 'Third test suggestion' }
-        ];
     }
 
     displaySuggestions(suggestions, container, inputElement) {
@@ -185,8 +149,10 @@ class WikipediaGraphExplorer {
 
         try {
             console.log('About to fetch Wikipedia graph...');
-            // Fetch Wikipedia data
-            const graphData = await this.fetchWikipediaGraph(this.currentQuery);
+            // Fetch Wikipedia data via service
+            const result = await this.api.fetchGraph(this.currentQuery);
+            const graphData = { nodes: result.nodes, links: result.links };
+            this.currentArticleData = result.pageData; // Store for article preview
             console.log('Graph data received:', graphData);
             
             // Validate graph data
@@ -234,128 +200,7 @@ class WikipediaGraphExplorer {
         }
     }
 
-    async fetchWikipediaGraph(query) {
-        console.log('fetchWikipediaGraph called with query:', query);
-        
-        try {
-            // Get the main article content
-            const pageUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`;
-            console.log('Fetching page URL:', pageUrl);
-            
-            const pageResponse = await fetch(pageUrl);
-            console.log('Page response status:', pageResponse.status);
-            
-            if (!pageResponse.ok) {
-                throw new Error(`Article not found (${pageResponse.status})`);
-            }
-
-            const pageData = await pageResponse.json();
-            console.log('Page data received:', pageData);
-            this.currentArticleData = pageData; // Store for article preview
-            
-            // Get links from the article - use the actual title from the response
-            const actualTitle = pageData.title || query;
-            const linksUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=links&titles=${encodeURIComponent(actualTitle)}&pllimit=20&plnamespace=0&origin=*`;
-            console.log('Fetching links URL:', linksUrl);
-            
-            const linksResponse = await fetch(linksUrl);
-            console.log('Links response status:', linksResponse.status);
-            
-            if (!linksResponse.ok) {
-                throw new Error(`Failed to fetch links (${linksResponse.status})`);
-            }
-            
-            const linksData = await linksResponse.json();
-            console.log('Links data received:', linksData);
-
-            const pages = linksData.query?.pages;
-            if (!pages) {
-                console.warn('No pages found in links response, creating graph with just main node');
-                // Return just the main node if no links found
-                return {
-                    nodes: [{
-                        id: query,
-                        title: pageData.title,
-                        description: pageData.extract,
-                        url: pageData.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(query)}`,
-                        isCentral: true,
-                        x: this.width / 2,
-                        y: this.height / 2
-                    }],
-                    links: []
-                };
-            }
-            
-            const pageId = Object.keys(pages)[0];
-            const page = pages[pageId];
-            
-            if (page.missing) {
-                console.warn('Page marked as missing, creating graph with just main node');
-                // Return just the main node if page is missing
-                return {
-                    nodes: [{
-                        id: query,
-                        title: pageData.title,
-                        description: pageData.extract,
-                        url: pageData.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(query)}`,
-                        isCentral: true,
-                        x: this.width / 2,
-                        y: this.height / 2
-                    }],
-                    links: []
-                };
-            }
-            
-            const links = page.links || [];
-            console.log('Found links:', links.length);
-
-            // Create nodes and links
-            const nodes = [
-                {
-                    id: query,
-                    title: pageData.title,
-                    description: pageData.extract,
-                    url: pageData.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(query)}`,
-                    isCentral: true,
-                    x: this.width / 2,
-                    y: this.height / 2
-                }
-            ];
-
-            const graphLinks = [];
-            const maxLinks = 12; // Limit to prevent overcrowding
-
-            for (let i = 0; i < Math.min(links.length, maxLinks); i++) {
-                const link = links[i];
-                const linkedTitle = link.title;
-                
-                // Skip if it's the same as central node
-                if (linkedTitle === query) continue;
-
-                nodes.push({
-                    id: linkedTitle,
-                    title: linkedTitle,
-                    description: '',
-                    url: `https://en.wikipedia.org/wiki/${encodeURIComponent(linkedTitle)}`,
-                    isCentral: false
-                });
-
-                graphLinks.push({
-                    source: query,
-                    target: linkedTitle
-                });
-            }
-
-            return { nodes, links: graphLinks };
-
-        } catch (error) {
-            console.error('Error fetching Wikipedia graph:', error);
-            console.error('fetchWikipediaGraph error name:', error.name);
-            console.error('fetchWikipediaGraph error message:', error.message);
-            console.error('fetchWikipediaGraph error stack:', error.stack);
-            throw error;
-        }
-    }
+    //This is where the related wikipedia articles get fetched
 
     transitionToGraphView() {
         const searchContainer = document.getElementById('search-container');
@@ -551,28 +396,13 @@ class WikipediaGraphExplorer {
     }
 
     async fetchArticlePreview(title) {
-        try {
-            const response = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
-            const data = await response.json();
-            
-            console.log('Wikipedia API response:', data); // Debug log
-            
-            return {
-                title: data.title,
-                extract: data.extract,
-                url: data.content_urls?.desktop?.page,
-                thumbnail: data.thumbnail,
-                originalimage: data.originalimage
-            };
-        } catch (error) {
-            console.error('Error fetching article preview:', error);
-            return null;
-        }
+        // Deprecated: kept for backward compatibility; use this.api.fetchSummary instead.
+        return this.api.fetchSummary(title);
     }
 
     async loadArticlePreview(title) {
         try {
-            const articleData = await this.fetchArticlePreview(title);
+            const articleData = await this.api.fetchSummary(title);
             if (!articleData) {
                 this.displayArticleError(title);
             } else {

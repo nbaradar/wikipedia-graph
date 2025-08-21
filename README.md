@@ -5,6 +5,8 @@
 
 A modern, interactive visualization tool that displays Wikipedia articles as connected graph nodes, similar to Obsidian's graph view. Users can search for any Wikipedia article and see its connections to other articles in a beautiful, responsive interface.
 
+To run locally: `python3 -m http.server 8000`
+
 ## Features
 
 - **Interactive Search**: Real-time autocomplete suggestions from Wikipedia
