@@ -9,7 +9,9 @@
  *   graph.on('node:select', title => console.log(title));
  *   graph.resize({ width, height });
  */
-export class GraphView extends EventTarget {
+import { Emitter } from '../utils/Emitter.js';
+
+export class GraphView {
   /**
    * @param {Object} opts
    * @param {string|HTMLElement} opts.el - Container where an <svg> will be appended.
@@ -18,7 +20,9 @@ export class GraphView extends EventTarget {
    * @param {number} [opts.height] - Initial height.
    */
   constructor({ el, loadingEl = '#loading', width = 800, height = 600 } = {}) {
-    super();
+    // Event emitter to communicate outward without DOM coupling.
+    // The app orchestrator can subscribe via graphView.on('node:select', ...)
+    this.emitter = new Emitter();
     this.containerEl = typeof el === 'string' ? document.querySelector(el) : el;
     if (!this.containerEl) throw new Error('GraphView: container element not found');
     this.loadingEl = typeof loadingEl === 'string' ? document.querySelector(loadingEl) : loadingEl;
@@ -34,10 +38,14 @@ export class GraphView extends EventTarget {
     this._setupForces();
   }
 
-  /** Add listener (EventTarget wrapper). */
-  on(type, handler) { this.addEventListener(type, e => handler(e.detail)); }
-  /** Emit internal events. */
-  _emit(type, detail) { this.dispatchEvent(new CustomEvent(type, { detail })); }
+  /**
+   * Subscribe to GraphView events.
+   * Events:
+   * - 'node:select' => payload: string (article title)
+   */
+  on(type, handler) { return this.emitter.on(type, handler); }
+  once(type, handler) { return this.emitter.once(type, handler); }
+  emit(type, payload) { return this.emitter.emit(type, payload); }
 
   _setupSvg() {
     const d3 = this.d3;
@@ -129,7 +137,8 @@ export class GraphView extends EventTarget {
           .attr('r', d => d.isCentral ? 25 : 20);
       })
       .on('click', (_, d) => {
-        this._emit('node:select', d.title);
+        // Emit the semantic event for the app to react (load preview, etc.)
+        this.emit('node:select', d.title);
       });
 
     nodeEnter.append('circle')
@@ -185,4 +194,3 @@ export class GraphView extends EventTarget {
     }
   }
 }
-

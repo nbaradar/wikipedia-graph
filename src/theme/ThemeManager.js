@@ -7,6 +7,8 @@
  * - Persists theme in localStorage under 'wikipedia-graph-theme'.
  * - Exposes set/get for programmatic control. Call destroy() to remove listeners if needed.
  */
+import { Emitter } from '../utils/Emitter.js';
+
 export class ThemeManager {
   /**
    * @param {Object} [opts]
@@ -16,6 +18,8 @@ export class ThemeManager {
    * @param {string} [opts.storageKey='wikipedia-graph-theme'] - localStorage key.
    */
   constructor(opts = {}) {
+    // Event emitter to notify about theme changes.
+    this.emitter = new Emitter();
     this.buttonSel = opts.button || '#theme-button';
     this.dropdownSel = opts.dropdown || '#theme-dropdown';
     this.optionSel = opts.optionSelector || '.theme-option';
@@ -63,12 +67,18 @@ export class ThemeManager {
     if (theme === 'dark') body.classList.add('dark-theme');
     localStorage.setItem(this.storageKey, theme);
     this._updateIcon(theme);
+    // Announce the theme change so other modules can react if needed.
+    this.emitter.emit('theme:change', theme);
   }
 
   /** Get current theme string. */
   get() {
     return localStorage.getItem(this.storageKey) || 'default';
   }
+
+  /** Subscribe to theme-related events. */
+  on(type, handler) { return this.emitter.on(type, handler); }
+  once(type, handler) { return this.emitter.once(type, handler); }
 
   /** Remove listeners (optional, for teardown). */
   destroy() {
@@ -94,4 +104,3 @@ export class ThemeManager {
     }
   }
 }
-
