@@ -1,5 +1,6 @@
 import { WikiApi } from './src/services/wikiApi.js';
 import { GraphView } from './src/graph/GraphView.js';
+import { ArticleView } from './src/article/ArticleView.js';
 
 class WikipediaGraphExplorer {
     constructor() {
@@ -10,6 +11,7 @@ class WikipediaGraphExplorer {
         this.height = this.getGraphHeight();
         this.api = new WikiApi();
         this.graphView = null;
+        this.articleView = null;
         
         this.init();
     }
@@ -17,6 +19,7 @@ class WikipediaGraphExplorer {
     init() {
         this.setupEventListeners();
         this.setupGraphView();
+        this.setupArticleView();
         this.setupThemeSwitcher();
         window.addEventListener('resize', () => this.handleResize());
     }
@@ -28,6 +31,10 @@ class WikipediaGraphExplorer {
         this.graphView.on('node:select', async (title) => {
             await this.loadArticlePreview(title);
         });
+    }
+
+    setupArticleView() {
+        this.articleView = new ArticleView({ el: '#article-content' });
     }
 
     setupEventListeners() {
@@ -183,7 +190,7 @@ class WikipediaGraphExplorer {
             if (this.currentArticleData) {
                 console.log('Displaying article preview...');
                 try {
-                    this.displayArticlePreview(this.currentArticleData);
+                    this.articleView?.show(this.currentArticleData);
                     console.log('Article preview displayed successfully');
                 } catch (previewError) {
                     console.error('Error displaying article preview:', previewError);
@@ -258,56 +265,14 @@ class WikipediaGraphExplorer {
         try {
             const articleData = await this.api.fetchSummary(title);
             if (!articleData) {
-                this.displayArticleError(title);
+                this.articleView?.showError(title);
             } else {
-                this.displayArticlePreview(articleData);
+                this.articleView?.show(articleData);
             }
         } catch (error) {
             console.error('Error loading article preview:', error);
-            this.displayArticleError(title);
+            this.articleView?.showError(title);
         }
-    }
-
-    displayArticlePreview(articleData) {
-        const articleContent = document.getElementById('article-content');
-        
-        console.log('Full article data:', articleData); // Debug log
-        
-        // Check if thumbnail exists and extract URL properly
-        let imageUrl = null;
-        if (articleData.thumbnail && articleData.thumbnail.source) {
-            imageUrl = articleData.thumbnail.source;
-        } else if (articleData.originalimage && articleData.originalimage.source) {
-            imageUrl = articleData.originalimage.source;
-        }
-        
-        console.log('Extracted image URL:', imageUrl); // Debug log
-        
-        const imageHtml = imageUrl ? 
-            `<div class="article-image">
-                <img src="${imageUrl}" alt="${this.escapeHtml(articleData.title)}" />
-            </div>` : '';
-        
-        articleContent.innerHTML = `
-            <div class="article-title">${this.escapeHtml(articleData.title)}</div>
-            ${imageHtml}
-            <div class="article-extract">${this.escapeHtml(articleData.extract || 'No description available.')}</div>
-            <a href="${articleData.url}" target="_blank" class="article-link">
-                Read full article on Wikipedia
-            </a>
-        `;
-    }
-
-    displayArticleError(title) {
-        const articleContent = document.getElementById('article-content');
-        
-        articleContent.innerHTML = `
-            <div class="article-title">${this.escapeHtml(title)}</div>
-            <div class="article-extract">Sorry, we couldn't load the preview for this article.</div>
-            <a href="https://en.wikipedia.org/wiki/${encodeURIComponent(title)}" target="_blank" class="article-link">
-                View on Wikipedia
-            </a>
-        `;
     }
 
     getGraphWidth() {
