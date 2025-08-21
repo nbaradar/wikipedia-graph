@@ -1,6 +1,7 @@
 import { WikiApi } from './src/services/wikiApi.js';
 import { GraphView } from './src/graph/GraphView.js';
 import { ArticleView } from './src/article/ArticleView.js';
+import { SearchView } from './src/search/SearchView.js';
 import { ThemeManager } from './src/theme/ThemeManager.js';
 
 class WikipediaGraphExplorer {
@@ -14,12 +15,13 @@ class WikipediaGraphExplorer {
         this.graphView = null;
         this.articleView = null;
         this.themeManager = null;
+        this.searchView = null;
         
         this.init();
     }
 
     init() {
-        this.setupEventListeners();
+        this.setupSearchView();
         this.setupGraphView();
         this.setupArticleView();
         this.setupThemeManager();
@@ -43,115 +45,22 @@ class WikipediaGraphExplorer {
         this.themeManager = new ThemeManager();
     }
 
-    setupEventListeners() {
-        // Main search functionality
-        const searchInput = document.getElementById('search-input');
-        const searchButton = document.getElementById('search-button');
-        const searchInputTop = document.getElementById('search-input-top');
-        const searchButtonTop = document.getElementById('search-button-top');
-
-        // Search input events
-        searchInput.addEventListener('input', (e) => this.handleSearchInput(e, 'suggestions'));
-        searchInput.addEventListener('keydown', (e) => this.handleKeyDown(e));
-        searchButton.addEventListener('click', () => this.performSearch(searchInput.value));
-
-        // Top search bar events
-        if (searchInputTop) {
-            searchInputTop.addEventListener('input', (e) => this.handleSearchInput(e, 'suggestions-top'));
-            searchInputTop.addEventListener('keydown', (e) => this.handleKeyDown(e, true));
-            searchInputTop.addEventListener('focus', () => {
-                console.log('Top search input focused');
-                const wrapper = searchInputTop.closest('.search-input-wrapper');
-                if (wrapper && wrapper.classList.contains('collapsed')) {
-                    wrapper.classList.remove('collapsed');
-                }
-            });
-        }
-        if (searchButtonTop) {
-            searchButtonTop.addEventListener('click', () => this.performSearch(searchInputTop.value));
-        }
-
-        // Click outside to hide suggestions
-        document.addEventListener('click', (e) => this.handleOutsideClick(e));
-    }
-
-    async handleSearchInput(event, suggestionsId) {
-        const query = event.target.value.trim();
-        const suggestionsContainer = document.getElementById(suggestionsId);
-
-        console.log('Search input:', query, 'Container:', suggestionsContainer); // Debug log
-
-        if (query.length < 2) {
-            suggestionsContainer.classList.remove('visible');
-            return;
-        }
-
-        try {
-            console.log('Fetching suggestions for:', query); // Debug log
-            const suggestions = await this.api.fetchSuggestions(query);
-            console.log('Got suggestions:', suggestions); // Debug log
-            this.displaySuggestions(suggestions, suggestionsContainer, event.target);
-        } catch (error) {
-            console.error('Error fetching suggestions:', error);
-        }
-    }
-
-    displaySuggestions(suggestions, container, inputElement) {
-        container.innerHTML = '';
-        
-        if (suggestions.length === 0) {
-            container.classList.remove('visible');
-            return;
-        }
-
-        suggestions.forEach(suggestion => {
-            const item = document.createElement('div');
-            item.className = 'suggestion-item';
-            item.innerHTML = `
-                <div class="suggestion-title">${this.escapeHtml(suggestion.title)}</div>
-                <div class="suggestion-description">${this.escapeHtml(suggestion.description)}</div>
-            `;
-            
-            item.addEventListener('click', () => {
-                inputElement.value = suggestion.title;
-                container.classList.remove('visible');
-                this.performSearch(suggestion.title);
-            });
-            
-            container.appendChild(item);
+    setupSearchView() {
+        this.searchView = new SearchView({
+            mainInput: '#search-input',
+            mainButton: '#search-button',
+            topInput: '#search-input-top',
+            topButton: '#search-button-top',
+            suggestionsMainEl: '#suggestions',
+            suggestionsTopEl: '#suggestions-top',
+            fetchSuggestions: (q) => this.api.fetchSuggestions(q),
+            minChars: 2,
+            debounceMs: 150,
         });
-
-        container.classList.add('visible');
+        this.searchView.on('submit', (q) => this.performSearch(q));
     }
 
-    handleKeyDown(event, isTopSearch = false) {
-        if (event.key === 'Enter') {
-            const input = isTopSearch ? 
-                document.getElementById('search-input-top') : 
-                document.getElementById('search-input');
-            this.performSearch(input.value);
-        } else if (event.key === 'Escape') {
-            const suggestions = isTopSearch ? 
-                document.getElementById('suggestions-top') : 
-                document.getElementById('suggestions');
-            suggestions.classList.remove('visible');
-        }
-    }
-
-    handleOutsideClick(event) {
-        const suggestions = document.getElementById('suggestions');
-        const suggestionsTop = document.getElementById('suggestions-top');
-        const searchWrapper = document.querySelector('.search-wrapper');
-        const searchBarTop = document.getElementById('search-bar-top');
-
-        if (searchWrapper && !searchWrapper.contains(event.target)) {
-            suggestions.classList.remove('visible');
-        }
-        
-        if (searchBarTop && !searchBarTop.contains(event.target)) {
-            suggestionsTop.classList.remove('visible');
-        }
-    }
+    // Search input/suggestions moved to SearchView
 
     async performSearch(query) {
         if (!query.trim()) return;
@@ -159,9 +68,8 @@ class WikipediaGraphExplorer {
         this.currentQuery = query.trim();
         console.log('Starting search for:', this.currentQuery);
         
-        // Hide suggestions
-        document.getElementById('suggestions').classList.remove('visible');
-        document.getElementById('suggestions-top').classList.remove('visible');
+        // Hide suggestions via view
+        this.searchView?.hideSuggestions();
 
         // Show loading
         this.showLoading();
@@ -244,7 +152,8 @@ class WikipediaGraphExplorer {
             setTimeout(() => {
                 searchContainer.style.display = 'none';
                 searchBarTop.classList.add('visible');
-                searchInputTop.value = this.currentQuery;
+                // Update the top search input via view
+                this.searchView?.setQuery(this.currentQuery, { target: 'top' });
                 
                 // Start with collapsed state
                 const topWrapper = searchBarTop.querySelector('.search-input-wrapper');
@@ -299,11 +208,6 @@ class WikipediaGraphExplorer {
     }
 
 
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
 }
 
 // Initialize the application when DOM is loaded
