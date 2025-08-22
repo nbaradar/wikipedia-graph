@@ -24,7 +24,7 @@ export default class NodeCountController {
     this.sliderSelector = opts.sliderSelector || '#node-count-slider';
     this.inputSelector = opts.inputSelector || '#node-count-input';
     this.defaultValue = opts.defaultValue ?? 10;
-    this.debounceMs = opts.debounceMs ?? 300;
+    this.debounceMs = opts.debounceMs ?? 50;
     
     this.slider = document.querySelector(this.sliderSelector);
     this.input = document.querySelector(this.inputSelector);
@@ -88,10 +88,13 @@ export default class NodeCountController {
       this.slider.value = clampedValue;
     }
     
-    // Debounce the change event to avoid excessive updates
+    // Immediate UI update for responsiveness
+    this.emitter.emit('nodeCount:change', clampedValue);
+    
+    // Optional: Still debounce for expensive operations like API calls
     clearTimeout(this.debounceTimeout);
     this.debounceTimeout = setTimeout(() => {
-      this.emitter.emit('nodeCount:change', clampedValue);
+      this.emitter.emit('nodeCount:debounced', clampedValue);
     }, this.debounceMs);
   }
   

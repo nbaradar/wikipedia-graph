@@ -36,7 +36,7 @@
     --graph-text: #fff;
     
     /* UI Component Colors */
-    --border-light: rgba(255, 255, 255, 0.2);
+    --border-light: rgba(181, 183, 183, 0.7);
     --border-medium: rgba(0, 0, 0, 0.1);
     --shadow-light: rgba(0, 0, 0, 0.15);
     --shadow-medium: rgba(0, 0, 0, 0.25);
@@ -68,6 +68,11 @@
     
     /* Loading Spinner */
     --spinner-bg: rgba(255, 255, 255, 0.3);
+    
+    /* Node Slider Colors */
+    --node-slider-bg: #6d4187cc;
+    --node-slider-thumb: #764ba2;
+    --node-slider-thumb-hover: #5a3a82;
 }
 
 /* Dark Theme */
@@ -128,6 +133,11 @@ body.dark-theme {
     
     /* Loading Spinner */
     --spinner-bg: rgba(160, 174, 192, 0.3);
+    
+    /* Node Slider Colors */
+    --node-slider-bg: #4a5568;
+    --node-slider-thumb: #93c5fd;
+    --node-slider-thumb-hover: #60a5fa;
 }
 
 /* Ocean Theme - Example of easy theme addition */
@@ -188,6 +198,11 @@ body.ocean-theme {
     
     /* Loading Spinner */
     --spinner-bg: rgba(184, 230, 255, 0.3);
+    
+    /* Node Slider Colors */
+    --node-slider-bg: #b0d7f2;
+    --node-slider-thumb: #00a8cc;
+    --node-slider-thumb-hover: #0085a3;
 }
 
 body {
@@ -647,12 +662,12 @@ body {
     flex: 1;
     height: 6px;
     border-radius: 3px;
-    background: var(--surface-secondary);
+    background: var(--node-slider-bg);
     outline: none;
     -webkit-appearance: none;
     appearance: none;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background 0.1s ease;
 }
 
 .node-count-slider::-webkit-slider-thumb {
@@ -661,14 +676,14 @@ body {
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: var(--accent-primary);
+    background: var(--node-slider-thumb);
     cursor: pointer;
     box-shadow: 0 2px 6px var(--shadow-light);
-    transition: all 0.2s ease;
+    transition: all 0.1s ease;
 }
 
 .node-count-slider::-webkit-slider-thumb:hover {
-    background: var(--accent-secondary);
+    background: var(--node-slider-thumb-hover);
     transform: scale(1.1);
     box-shadow: 0 3px 8px var(--shadow-medium);
 }
@@ -677,15 +692,15 @@ body {
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: var(--accent-primary);
+    background: var(--node-slider-thumb);
     cursor: pointer;
     border: none;
     box-shadow: 0 2px 6px var(--shadow-light);
-    transition: all 0.2s ease;
+    transition: all 0.1s ease;
 }
 
 .node-count-slider::-moz-range-thumb:hover {
-    background: var(--accent-secondary);
+    background: var(--node-slider-thumb-hover);
     transform: scale(1.1);
     box-shadow: 0 3px 8px var(--shadow-medium);
 }
@@ -693,7 +708,7 @@ body {
 .node-count-slider::-moz-range-track {
     height: 6px;
     border-radius: 3px;
-    background: var(--surface-secondary);
+    background: var(--node-slider-bg);
     border: none;
 }
 
@@ -742,32 +757,73 @@ body {
     pointer-events: none;
 }
 
-/* Split layout container */
+/* Split layout */
 .content-container {
     display: flex;
-    flex: 1;
-    height: calc(100% - 80px); /* Account for search bar height */
-}
-
-/* Left panel: Graph */
-.graph-panel {
-    flex: 0 0 60%;
+    height: 100vh;
+    gap: 0;
     position: relative;
-    border-right: 2px solid var(--panel-border);
 }
 
-.graph {
+.graph-panel {
+    flex: 0 0 75%;
+    position: relative;
+    background: var(--graph-bg) !important;
+    min-width: 300px;
+    transition: flex-basis 0.05s ease;
+}
+
+.panel-splitter {
+    flex: 0 0 8px;
+    background: var(--border-light);
+    cursor: col-resize;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+    z-index: 10;
+}
+
+.panel-splitter:hover {
+    background: var(--accent-primary);
+}
+
+.panel-splitter.dragging {
+    background: var(--accent-primary);
+    transition: none;
+}
+
+.splitter-handle {
     width: 100%;
     height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     position: relative;
 }
 
-/* Right panel: Article preview */
+.splitter-grip {
+    width: 2px;
+    height: 40px;
+    background: var(--text-secondary);
+    border-radius: 1px;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+
+.panel-splitter:hover .splitter-grip,
+.panel-splitter.dragging .splitter-grip {
+    opacity: 1;
+}
+
 .article-panel {
     flex: 1;
-    background: var(--article-panel-bg);
-    backdrop-filter: blur(10px);
+    background: var(--surface-primary);
+    overflow: hidden;
+    min-width: 250px;
     overflow-y: auto;
+    transition: flex-basis 0.05s ease;
 }
 
 .article-content {

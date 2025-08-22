@@ -3,6 +3,7 @@ import ArticleView from './src/article/ArticleView.js';
 import GraphView from './src/graph/GraphView.js';
 import NodeCountController from './src/controls/NodeCountController.js';
 import PanelController from './src/controls/PanelController.js';
+import SplitterController from './src/controls/SplitterController.js';
 import WikiApi from './src/services/wikiApi.js';
 import Emitter from './src/utils/Emitter.js';
 import ThemeManager from './src/theme/ThemeManager.js';
@@ -21,6 +22,7 @@ class WikipediaGraphExplorer {
         this.themeManager = null;
         this.searchView = null;
         this.nodeCountController = null;
+        this.splitterController = null;
         
         this.init();
     }
@@ -41,6 +43,7 @@ class WikipediaGraphExplorer {
         this.setupArticleView();
         this.setupThemeManager();
         this.setupNodeCountController();
+        this.setupSplitterController();
         window.addEventListener('resize', () => this.handleResize());
         console.log('WikipediaGraphExplorer initialized');
     }
@@ -71,6 +74,26 @@ class WikipediaGraphExplorer {
         // Setup panel controller for drag and collapse functionality
         const nodeControlPanel = document.getElementById('node-control');
         this.panelController = new PanelController(nodeControlPanel, this.emitter);
+    }
+
+    setupSplitterController() {
+        const splitter = document.getElementById('panel-splitter');
+        const leftPanel = document.getElementById('graph-panel');
+        const rightPanel = document.getElementById('article-panel');
+        
+        this.splitterController = new SplitterController(splitter, leftPanel, rightPanel, this.emitter);
+        
+        // Listen for panel resize events to update graph dimensions
+        this.emitter.on('panels:resize', (data) => {
+            if (this.graphView) {
+                // Small delay to let CSS transitions complete
+                setTimeout(() => {
+                    const newWidth = this.getGraphWidth();
+                    const newHeight = this.getGraphHeight();
+                    this.graphView.resize({ width: newWidth, height: newHeight });
+                }, 100);
+            }
+        });
     }
 
     setupSearchView() {
