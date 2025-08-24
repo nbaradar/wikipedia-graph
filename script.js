@@ -168,6 +168,9 @@ class WikipediaGraphExplorer {
             this.currentArticleData = result.pageData; // Store for article preview
             console.log('Graph data received:', graphData);
             
+            // Log cache statistics after graph generation
+            this._logCacheStats();
+            
             // Validate graph data
             if (!graphData || !graphData.nodes || !Array.isArray(graphData.nodes)) {
                 throw new Error('Invalid graph data structure received');
@@ -331,10 +334,68 @@ class WikipediaGraphExplorer {
         return this.api.getAvailableFilteringStrategies();
     }
 
+    /**
+     * Log cache statistics to console
+     * @private
+     */
+    _logCacheStats() {
+        try {
+            const stats = this.api.getCacheStats();
+            console.group('📊 Cache Performance Stats');
+            
+            // Summary of all caches
+            console.log(`🗄️  Total Memory Usage: ${this._formatBytes(stats.totalMemoryEstimate)}`);
+            
+            // Individual cache stats
+            Object.entries(stats).forEach(([cacheName, stat]) => {
+                if (cacheName === 'totalMemoryEstimate') return;
+                
+                const hitRate = stat.hitRate || 0;
+                const emoji = hitRate > 70 ? '🟢' : hitRate > 40 ? '🟡' : '🔴';
+                
+                console.log(`${emoji} ${cacheName}: ${stat.size}/${stat.maxSize} items, ${hitRate.toFixed(1)}% hit rate, ${stat.hits} hits, ${stat.misses} misses`);
+            });
+            
+            console.groupEnd();
+        } catch (error) {
+            console.warn('Failed to log cache stats:', error);
+        }
+    }
+
+    /**
+     * Format bytes into human readable format
+     * @param {number} bytes - Number of bytes
+     * @returns {string} Formatted string
+     * @private
+     */
+    _formatBytes(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    /**
+     * Debug method - get cache statistics (accessible from console)
+     * @returns {Object} Cache statistics
+     */
+    getCacheStats() {
+        return this.api.getCacheStats();
+    }
+
+    /**
+     * Debug method - clear all caches (accessible from console)
+     */
+    clearCaches() {
+        this.api.clearAllCaches();
+        console.log('🗑️  All caches cleared');
+    }
+
 
 }
 
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new WikipediaGraphExplorer();
+    window.wikiApp = new WikipediaGraphExplorer();
 });

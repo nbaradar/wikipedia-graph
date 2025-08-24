@@ -23,12 +23,20 @@ export default class NodeFilter {
       }
     });
 
-    // Future implementation - could fetch links in source order
+    // Source order implementation using wikitext parsing
     this.strategies.set('link-order', {
       name: 'Link Order', 
       description: 'Order by appearance in source article',
-      filter: (links, maxCount) => {
-        // For now, same as alphabetical - would need different API call to get source order
+      filter: async (links, maxCount, options = {}) => {
+        // This strategy requires special handling since it needs to fetch different data
+        // The actual implementation is handled in WikiApi.fetchLinksInSourceOrder()
+        // This is a placeholder that should not be called directly
+        if (options.sourceOrderLinks) {
+          return options.sourceOrderLinks.slice(0, maxCount);
+        }
+        
+        // Fallback to alphabetical if source order data not available
+        console.warn('Link order strategy called without source order data, falling back to alphabetical');
         return links.slice(0, maxCount);
       }
     });
