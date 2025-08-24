@@ -72,6 +72,10 @@ class WikipediaGraphExplorer {
         this.graphControlPanel.on('nodeCount:change', async (nodeCount) => {
             await this.updateGraphWithNodeCount(nodeCount);
         });
+        
+        this.graphControlPanel.on('filterStrategy:change', async (strategy) => {
+            await this.updateFilterStrategy(strategy);
+        });
     }
 
     setupSplitterController() {
