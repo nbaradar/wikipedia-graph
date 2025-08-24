@@ -5,6 +5,7 @@
  * - UI-agnostic: no DOM or layout assumptions (safe for future resizable panes).
  * - Uses Wikipedia public APIs with CORS via `origin=*` where required.
  * - Keeps a tiny in-memory cache to reduce duplicate requests.
+ * - Supports pluggable node filtering strategies via NodeFilter.
  *
  * Example:
  *   import { WikiApi } from './src/services/wikiApi.js';
@@ -13,6 +14,8 @@
  *   const suggestions = await api.fetchSuggestions('graph');
  *   const summary = await api.fetchSummary('D3.js');
  */
+import NodeFilter from './NodeFilter.js';
+
 export default class WikiApi {
   /**
    * @param {Object} [opts]
@@ -25,6 +28,7 @@ export default class WikiApi {
     this._fetch = opts.fetchImpl || ((...args) => globalThis.fetch(...args));
     this.suggestionLimit = opts.suggestionLimit ?? 8;
     this.maxLinks = opts.maxLinks ?? 12;
+    this.nodeFilter = new NodeFilter();
 
     /** @type {Map<string, any>} */
     this._summaryCache = new Map();
@@ -122,9 +126,10 @@ export default class WikiApi {
    *
    * @param {string} query
    * @param {number} [maxNodes=12] - Maximum number of connected nodes to include
+   * @param {string} [filterStrategy='alphabetical'] - Node filtering strategy to use
    * @returns {Promise<{nodes: Array<any>, links: Array<{source:string,target:string}>, pageData: any}>}
    */
-  async fetchGraph(query, maxNodes = 12) {
+  async fetchGraph(query, maxNodes = 12, filterStrategy = 'alphabetical') {
     if (!query?.trim()) throw new Error('Empty query');
 
     // 1) Get central page summary to resolve canonical title
@@ -132,10 +137,13 @@ export default class WikiApi {
     if (!pageData) throw new Error('Article not found');
     const actualTitle = pageData.title || query;
 
-    // 2) Get up to maxNodes outgoing links
+    // 2) Get outgoing links and apply filtering strategy
     let linkedTitles = [];
     try {
-      linkedTitles = await this.fetchLinks(actualTitle, maxNodes);
+      // Fetch more links than needed to have options for filtering
+      const fetchCount = Math.max(maxNodes * 2, 50); // Fetch extra for filtering
+      const allLinks = await this.fetchLinks(actualTitle, fetchCount);
+      linkedTitles = this.nodeFilter.applyFilter(allLinks, maxNodes, filterStrategy);
     } catch (_) {
       linkedTitles = [];
     }
@@ -162,5 +170,22 @@ export default class WikiApi {
       .map(t => ({ source: actualTitle, target: t }));
 
     return { nodes, links, pageData };
+  }
+
+  /**
+   * Get available node filtering strategies
+   * @returns {Array<{id: string, name: string, description: string}>}
+   */
+  getAvailableFilteringStrategies() {
+    return this.nodeFilter.getAvailableStrategies();
+  }
+
+  /**
+   * Register a custom node filtering strategy
+   * @param {string} id - Unique identifier for the strategy
+   * @param {Object} strategy - Strategy object with name, description, and filter function
+   */
+  registerFilteringStrategy(id, strategy) {
+    this.nodeFilter.registerStrategy(id, strategy);
   }
 }

@@ -17,6 +17,7 @@ class WikipediaGraphExplorer {
         this.height = this.getGraphHeight();
         this.api = new WikiApi();
         this.emitter = new Emitter();
+        this.currentFilterStrategy = 'alphabetical';
         this.graphView = null;
         this.articleView = null;
         this.themeManager = null;
@@ -159,9 +160,9 @@ class WikipediaGraphExplorer {
 
         try {
             console.log('About to fetch Wikipedia graph...');
-            // Fetch Wikipedia data via service with node count
+            // Fetch Wikipedia data via service with node count and filter strategy
             const nodeCount = this.nodeCountController ? this.nodeCountController.getValue() : 10;
-            const result = await this.api.fetchGraph(this.currentQuery, nodeCount);
+            const result = await this.api.fetchGraph(this.currentQuery, nodeCount, this.currentFilterStrategy);
             const graphData = { nodes: result.nodes, links: result.links };
             this.currentArticleData = result.pageData; // Store for article preview
             console.log('Graph data received:', graphData);
@@ -258,7 +259,7 @@ class WikipediaGraphExplorer {
         this.graphView.setLoading(true);
         
         try {
-            const { nodes, links, pageData } = await this.api.fetchGraph(this.currentQuery, nodeCount);
+            const { nodes, links, pageData } = await this.api.fetchGraph(this.currentQuery, nodeCount, this.currentFilterStrategy);
             this.currentArticleData = pageData;
             this.graphView.render({ nodes, links }, true); // Enable animations for dynamic updates
         } catch (error) {
@@ -302,6 +303,31 @@ class WikipediaGraphExplorer {
         if (this.graphView) {
             this.graphView.resize({ width: this.width, height: this.height });
         }
+    }
+
+    /**
+     * Update the node filtering strategy and refresh the graph
+     * @param {string} strategyId - The filtering strategy ID to use
+     */
+    async updateFilterStrategy(strategyId) {
+        if (this.currentFilterStrategy === strategyId) return;
+        
+        this.currentFilterStrategy = strategyId;
+        
+        // Refresh the graph with new filtering if we have a current query
+        if (this.currentQuery) {
+            await this.updateGraphWithNodeCount(
+                this.nodeCountController ? this.nodeCountController.getValue() : 10
+            );
+        }
+    }
+
+    /**
+     * Get available filtering strategies
+     * @returns {Array<{id: string, name: string, description: string}>}
+     */
+    getAvailableFilterStrategies() {
+        return this.api.getAvailableFilteringStrategies();
     }
 
 
