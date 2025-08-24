@@ -158,7 +158,7 @@ body.ocean-theme {
     --accent-secondary: #0085a3;
     --accent-hover: rgba(0, 168, 204, 0.2);
     
-    --graph-bg: #0f4c75;
+    --graph-bg: #093358;
     --graph-node-primary: #00a8cc;
     --graph-node-secondary: #3282b8;
     --graph-node-central: #ff6b6b;
@@ -179,7 +179,7 @@ body.ocean-theme {
     --suggestion-hover-border: rgba(0, 168, 204, 0.4);
     
     /* Article Panel Colors */
-    --article-panel-bg: var(--surface-primary);
+    --article-panel-bg: #46728ff2;
     
     /* Panel & Border Colors */
     --panel-border: rgba(255, 255, 255, 0.15);
