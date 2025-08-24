@@ -28,6 +28,7 @@ Wikipedia Graph Viewer is a modern, interactive web application that visualizes 
 │   ├── article/          # Article display components
 │   │   └── ArticleView.js
 │   ├── controls/         # UI control components
+│   │   ├── GraphControlPanelController.js
 │   │   ├── NodeCountController.js
 │   │   ├── PanelController.js
 │   │   └── SplitterController.js
@@ -49,6 +50,7 @@ Wikipedia Graph Viewer is a modern, interactive web application that visualizes 
 3. **No Framework Dependency**: Pure vanilla JavaScript for maximum performance and minimal overhead
 4. **Progressive Enhancement**: Core functionality works without JavaScript, enhanced features layer on top
 5. **Separation of Concerns**: Clear separation between data fetching (services), presentation (views), and control logic
+6. **Integrated Controllers**: Panel functionality integrated directly into controllers for better maintainability
 
 ## Current Implementation Status
 

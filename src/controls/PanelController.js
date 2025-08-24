@@ -9,9 +9,9 @@ class PanelController {
     this.isCollapsed = false;
     this.dragOffset = { x: 0, y: 0 };
     
-    this.dragHandle = this.panel.querySelector('.node-control-drag-handle');
-    this.collapseButton = this.panel.querySelector('.node-control-collapse');
-    this.content = this.panel.querySelector('.node-control-content');
+    this.dragHandle = this.panel.querySelector('.graph-control-drag-handle');
+    this.collapseButton = this.panel.querySelector('.graph-control-collapse');
+    this.content = this.panel.querySelector('.graph-control-content');
     
     this.init();
   }
@@ -115,12 +115,12 @@ class PanelController {
       }
     };
     
-    localStorage.setItem('nodePanel:state', JSON.stringify(state));
+    localStorage.setItem('graphControlPanel:state', JSON.stringify(state));
   }
   
   loadState() {
     try {
-      const savedState = localStorage.getItem('nodePanel:state');
+      const savedState = localStorage.getItem('graphControlPanel:state');
       if (!savedState) return;
       
       const state = JSON.parse(savedState);

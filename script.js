@@ -1,8 +1,7 @@
 import SearchView from './src/search/SearchView.js';
 import ArticleView from './src/article/ArticleView.js';
 import GraphView from './src/graph/GraphView.js';
-import NodeCountController from './src/controls/NodeCountController.js';
-import PanelController from './src/controls/PanelController.js';
+import GraphControlPanelController from './src/controls/GraphControlPanelController.js';
 import SplitterController from './src/controls/SplitterController.js';
 import WikiApi from './src/services/wikiApi.js';
 import Emitter from './src/utils/Emitter.js';
@@ -22,7 +21,7 @@ class WikipediaGraphExplorer {
         this.articleView = null;
         this.themeManager = null;
         this.searchView = null;
-        this.nodeCountController = null;
+        this.graphControlPanel = null;
         this.splitterController = null;
         
         this.init();
@@ -43,7 +42,7 @@ class WikipediaGraphExplorer {
         this.setupGraphView();
         this.setupArticleView();
         this.setupThemeManager();
-        this.setupNodeCountController();
+        this.setupGraphControlPanel();
         this.setupSplitterController();
         window.addEventListener('resize', () => this.handleResize());
         console.log('WikipediaGraphExplorer initialized');
@@ -66,15 +65,13 @@ class WikipediaGraphExplorer {
         this.themeManager = new ThemeManager();
     }
 
-    setupNodeCountController() {
-        this.nodeCountController = new NodeCountController();
-        this.nodeCountController.on('nodeCount:change', async (nodeCount) => {
+    setupGraphControlPanel() {
+        this.graphControlPanel = new GraphControlPanelController({
+            panelSelector: '#graph-control'
+        });
+        this.graphControlPanel.on('nodeCount:change', async (nodeCount) => {
             await this.updateGraphWithNodeCount(nodeCount);
         });
-        
-        // Setup panel controller for drag and collapse functionality
-        const nodeControlPanel = document.getElementById('node-control');
-        this.panelController = new PanelController(nodeControlPanel, this.emitter);
     }
 
     setupSplitterController() {
@@ -161,7 +158,7 @@ class WikipediaGraphExplorer {
         try {
             console.log('About to fetch Wikipedia graph...');
             // Fetch Wikipedia data via service with node count and filter strategy
-            const nodeCount = this.nodeCountController ? this.nodeCountController.getValue() : 10;
+            const nodeCount = this.graphControlPanel ? this.graphControlPanel.getNodeCount() : 10;
             const result = await this.api.fetchGraph(this.currentQuery, nodeCount, this.currentFilterStrategy);
             const graphData = { nodes: result.nodes, links: result.links };
             this.currentArticleData = result.pageData; // Store for article preview
@@ -317,7 +314,7 @@ class WikipediaGraphExplorer {
         // Refresh the graph with new filtering if we have a current query
         if (this.currentQuery) {
             await this.updateGraphWithNodeCount(
-                this.nodeCountController ? this.nodeCountController.getValue() : 10
+                this.graphControlPanel ? this.graphControlPanel.getNodeCount() : 10
             );
         }
     }
